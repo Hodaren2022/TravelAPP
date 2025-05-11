@@ -23,6 +23,44 @@ const TripForm = styled.form`
   margin-bottom: 1rem;
 `
 
+const FormSection = styled.div`
+  margin-top: 1.5rem;
+  border-top: 1px solid #eee;
+  padding-top: 1rem;
+`
+
+const FormRow = styled.div`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+`
+
+const FormGroup = styled.div`
+  flex: 1;
+  margin-bottom: 0.5rem;
+`
+
+const FlightTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+`
+
 const ButtonGroup = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -38,6 +76,18 @@ const Button = styled.button`
   cursor: pointer;
 `
 
+// 台灣航空公司列表
+const taiwanAirlines = [
+  '中華航空',
+  '長榮航空',
+  '立榮航空',
+  '華信航空',
+  '台灣虎航',
+  '星宇航空',
+  '遠東航空',
+  '其他'
+];
+
 const TripManagement = () => {
   const { trips, setTrips, setSelectedTripId } = useTrip();
   
@@ -47,7 +97,19 @@ const TripManagement = () => {
     destination: '',
     startDate: '',
     endDate: '',
-    description: ''
+    description: '',
+    flights: []
+  });
+  
+  const [newFlight, setNewFlight] = useState({
+    date: '',
+    airline: '',
+    flightNumber: '',
+    departureCity: '',
+    arrivalCity: '',
+    departureTime: '',
+    arrivalTime: '',
+    customAirline: ''
   });
   
   const [isEditing, setIsEditing] = useState(false);
@@ -55,6 +117,49 @@ const TripManagement = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewTrip(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleFlightInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewFlight(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const addFlight = () => {
+    // 處理自定義航空公司
+    let airlineName = newFlight.airline;
+    if (airlineName === '其他' && newFlight.customAirline) {
+      airlineName = newFlight.customAirline;
+    }
+    
+    const flight = {
+      ...newFlight,
+      airline: airlineName,
+      id: Date.now().toString()
+    };
+    
+    setNewTrip(prev => ({
+      ...prev,
+      flights: [...(prev.flights || []), flight]
+    }));
+    
+    // 重置航班表單
+    setNewFlight({
+      date: '',
+      airline: '',
+      flightNumber: '',
+      departureCity: '',
+      arrivalCity: '',
+      departureTime: '',
+      arrivalTime: '',
+      customAirline: ''
+    });
+  };
+  
+  const removeFlight = (flightId) => {
+    setNewTrip(prev => ({
+      ...prev,
+      flights: prev.flights.filter(flight => flight.id !== flightId)
+    }));
   };
   
   const handleSubmit = (e) => {
@@ -76,7 +181,19 @@ const TripManagement = () => {
       destination: '',
       startDate: '',
       endDate: '',
-      description: ''
+      description: '',
+      flights: []
+    });
+    
+    setNewFlight({
+      date: '',
+      airline: '',
+      flightNumber: '',
+      departureCity: '',
+      arrivalCity: '',
+      departureTime: '',
+      arrivalTime: '',
+      customAirline: ''
     });
   };
   
@@ -155,6 +272,154 @@ const TripManagement = () => {
           ></textarea>
         </div>
         
+        <FormSection>
+          <h4>航班資訊（選填）</h4>
+          
+          <FormRow>
+            <FormGroup>
+              <label htmlFor="flightDate">日期</label>
+              <input
+                type="date"
+                id="flightDate"
+                name="date"
+                value={newFlight.date}
+                onChange={handleFlightInputChange}
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <label htmlFor="airline">航空公司</label>
+              <select
+                id="airline"
+                name="airline"
+                value={newFlight.airline}
+                onChange={handleFlightInputChange}
+              >
+                <option value="">-- 請選擇航空公司 --</option>
+                {taiwanAirlines.map(airline => (
+                  <option key={airline} value={airline}>{airline}</option>
+                ))}
+              </select>
+            </FormGroup>
+            
+            {newFlight.airline === '其他' && (
+              <FormGroup>
+                <label htmlFor="customAirline">自定義航空公司</label>
+                <input
+                  type="text"
+                  id="customAirline"
+                  name="customAirline"
+                  value={newFlight.customAirline}
+                  onChange={handleFlightInputChange}
+                />
+              </FormGroup>
+            )}
+          </FormRow>
+          
+          <FormRow>
+            <FormGroup>
+              <label htmlFor="flightNumber">航班編號</label>
+              <input
+                type="text"
+                id="flightNumber"
+                name="flightNumber"
+                value={newFlight.flightNumber}
+                onChange={handleFlightInputChange}
+                placeholder="例如: BR182"
+              />
+            </FormGroup>
+          </FormRow>
+          
+          <FormRow>
+            <FormGroup>
+              <label htmlFor="departureCity">起飛城市</label>
+              <input
+                type="text"
+                id="departureCity"
+                name="departureCity"
+                value={newFlight.departureCity}
+                onChange={handleFlightInputChange}
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <label htmlFor="arrivalCity">降落城市</label>
+              <input
+                type="text"
+                id="arrivalCity"
+                name="arrivalCity"
+                value={newFlight.arrivalCity}
+                onChange={handleFlightInputChange}
+              />
+            </FormGroup>
+          </FormRow>
+          
+          <FormRow>
+            <FormGroup>
+              <label htmlFor="departureTime">起飛時間</label>
+              <input
+                type="time"
+                id="departureTime"
+                name="departureTime"
+                value={newFlight.departureTime}
+                onChange={handleFlightInputChange}
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <label htmlFor="arrivalTime">降落時間</label>
+              <input
+                type="time"
+                id="arrivalTime"
+                name="arrivalTime"
+                value={newFlight.arrivalTime}
+                onChange={handleFlightInputChange}
+              />
+            </FormGroup>
+          </FormRow>
+          
+          <Button 
+            type="button" 
+            primary 
+            onClick={addFlight}
+            style={{ marginTop: '0.5rem' }}
+          >
+            新增航班
+          </Button>
+          
+          {newTrip.flights && newTrip.flights.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <h5>已新增航班</h5>
+              <FlightTable>
+                <thead>
+                  <tr>
+                    <th>日期</th>
+                    <th>航空公司</th>
+                    <th>航班編號</th>
+                    <th>起飛/降落城市</th>
+                    <th>起飛/降落時間</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {newTrip.flights.map(flight => (
+                    <tr key={flight.id}>
+                      <td>{flight.date}</td>
+                      <td>{flight.airline}</td>
+                      <td>{flight.flightNumber}</td>
+                      <td>{flight.departureCity}/{flight.arrivalCity}</td>
+                      <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                      <td>
+                        <Button onClick={() => removeFlight(flight.id)}>刪除</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </FlightTable>
+            </div>
+          )}
+        </FormSection>
+        
         <ButtonGroup>
           <Button primary type="submit">
             {isEditing ? '更新行程' : '新增行程'}
@@ -188,6 +453,35 @@ const TripManagement = () => {
               <p><strong>目的地:</strong> {trip.destination}</p>
               <p><strong>日期:</strong> {trip.startDate} 至 {trip.endDate}</p>
               <p>{trip.description}</p>
+              
+              {trip.flights && trip.flights.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h5>航班資訊</h5>
+                  <FlightTable>
+                    <thead>
+                      <tr>
+                        <th>日期</th>
+                        <th>航空公司</th>
+                        <th>航班編號</th>
+                        <th>起飛/降落城市</th>
+                        <th>起飛/降落時間</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trip.flights.map(flight => (
+                        <tr key={flight.id}>
+                          <td>{flight.date}</td>
+                          <td>{flight.airline}</td>
+                          <td>{flight.flightNumber}</td>
+                          <td>{flight.departureCity}/{flight.arrivalCity}</td>
+                          <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </FlightTable>
+                </div>
+              )}
+              
               <ButtonGroup>
                 <Button primary onClick={() => handleEdit(trip)}>編輯</Button>
                 <Button onClick={() => handleDelete(trip.id)}>刪除</Button>
