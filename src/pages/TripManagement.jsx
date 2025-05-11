@@ -124,6 +124,25 @@ const TripManagement = () => {
     setNewFlight(prev => ({ ...prev, [name]: value }));
   };
   
+  // 排序航班函數 - 按日期和時間排序，日期時間較近的排在上方
+  const sortFlights = (flights) => {
+    return [...flights].sort((a, b) => {
+      // 先比較日期
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateA - dateB; // 日期較早的排前面
+      }
+      
+      // 如果日期相同，比較時間
+      const timeA = a.departureTime || '';
+      const timeB = b.departureTime || '';
+      
+      return timeA.localeCompare(timeB);
+    });
+  };
+  
   const addFlight = () => {
     // 處理自定義航空公司
     let airlineName = newFlight.airline;
@@ -137,10 +156,15 @@ const TripManagement = () => {
       id: Date.now().toString()
     };
     
-    setNewTrip(prev => ({
-      ...prev,
-      flights: [...(prev.flights || []), flight]
-    }));
+    setNewTrip(prev => {
+      // 添加新航班並排序
+      const updatedFlights = sortFlights([...(prev.flights || []), flight]);
+      
+      return {
+        ...prev,
+        flights: updatedFlights
+      };
+    });
     
     // 重置航班表單
     setNewFlight({
@@ -402,7 +426,7 @@ const TripManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {newTrip.flights.map(flight => (
+                  {sortFlights(newTrip.flights).map(flight => (
                     <tr key={flight.id}>
                       <td>{flight.date}</td>
                       <td>{flight.airline}</td>
@@ -468,7 +492,7 @@ const TripManagement = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {trip.flights.map(flight => (
+                      {sortFlights(trip.flights).map(flight => (
                         <tr key={flight.id}>
                           <td>{flight.date}</td>
                           <td>{flight.airline}</td>
