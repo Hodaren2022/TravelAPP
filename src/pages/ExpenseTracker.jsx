@@ -88,6 +88,28 @@ const RateInfoText = styled.div`
   gap: 0.5rem; /* 內部元素間距 */
 `;
 
+// 新增用於描述標籤的 styled component 容器
+const DescriptionTags = styled.div`
+  display: flex;
+  flex-wrap: wrap; /* 讓標籤可以換行 */
+  gap: 0.5rem;
+  margin-top: 0.5rem; /* 標籤上方空間 */
+`;
+
+// 新增用於描述標籤的 styled component 個別標籤
+const DescriptionTag = styled.span`
+  background-color: #eee;
+  color: #333;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px; /* 圓角讓它看起來像標籤 */
+  cursor: pointer;
+  font-size: 0.9rem;
+  &:hover {
+    background-color: #ddd;
+  }
+`;
+
+
 // 貨幣對選項
 const currencyPairs = [
   { id: 'TWD_JPY', name: '台幣 → 日幣', fromCode: 'TWD', toCode: 'JPY' },
@@ -95,6 +117,10 @@ const currencyPairs = [
   { id: 'TWD_CNY', name: '台幣 → 人民幣', fromCode: 'TWD', toCode: 'CNY' },
   { id: 'TWD_KRW', name: '台幣 → 韓元', fromCode: 'TWD', toCode: 'KRW' }
 ];
+
+// 預設的消費描述選項
+const defaultDescriptions = ["早餐", "午餐", "晚餐", "交通", "點心", "飲料", "伴手", "禮物", "門票"];
+
 
 const ExpenseTracker = () => {
   const { trips, selectedTripId, setSelectedTripId } = useTrip();
@@ -255,13 +281,13 @@ const ExpenseTracker = () => {
     } else if (fromAmount && (newRate === '' || isNaN(parseFloat(newRate)) || parseFloat(newRate) <= 0)) {
         // 如果手動匯率被清空或無效，且之前是手動模式，則可以選擇清空toAmount或用自動匯率重算
         //setToAmount(''); // 或者用自動匯率重算
-         if (!useManualRate && exchangeRates[getCurrentPair().toCode]) { // 確保不是在手動模式下清空，且有自動匯率
-            const autoRate = exchangeRates[getCurrentPair().toCode] || 0;
-            const converted = (parseFloat(fromAmount) * autoRate).toFixed(2);
-            setToAmount(converted);
-        } else {
-            setToAmount('');
-        }
+          if (!useManualRate && exchangeRates[getCurrentPair().toCode]) { // 確保不是在手動模式下清空，且有自動匯率
+             const autoRate = exchangeRates[getCurrentPair().toCode] || 0;
+             const converted = (parseFloat(fromAmount) * autoRate).toFixed(2);
+             setToAmount(converted);
+         } else {
+             setToAmount('');
+         }
     }
   };
 
@@ -289,11 +315,19 @@ const ExpenseTracker = () => {
     }
   };
 
+
   // 處理新增消費記錄表單輸入變更
   const handleExpenseInputChange = (e) => {
     const { name, value } = e.target;
     setNewExpense(prev => ({ ...prev, [name]: value }));
   };
+
+  // 處理點擊描述標籤的函式
+  const handleTagClick = (description) => {
+    // 將點擊的標籤文字設定到 newExpense.description
+    setNewExpense(prev => ({ ...prev, description: description }));
+  };
+
 
   // 記錄當前轉換
   const recordExpense = () => {
@@ -336,7 +370,7 @@ const ExpenseTracker = () => {
       [selectedTripId]: [...(prev[selectedTripId] || []), expense]
     }));
 
-    // 重置表單
+    // 重置表單 (不重置手動匯率和模式)
     setNewExpense({
       description: '',
       amount: '',
@@ -497,6 +531,7 @@ const ExpenseTracker = () => {
               )}
             </CurrencyConverterContainer>
 
+            {/* --- 消費描述及其快速填寫標籤部分 --- */}
             <FormGroup>
               <label htmlFor="description">消費描述:</label>
               <input
@@ -507,7 +542,17 @@ const ExpenseTracker = () => {
                 onChange={handleExpenseInputChange}
                 placeholder="例如：晚餐、交通費"
               />
+              {/* 渲染可點擊的標籤 */}
+              <DescriptionTags>
+                {defaultDescriptions.map((desc, index) => (
+                  <DescriptionTag key={index} onClick={() => handleTagClick(desc)}>
+                    {desc}
+                  </DescriptionTag>
+                ))}
+              </DescriptionTags>
             </FormGroup>
+            {/* --- 消費描述及其快速填寫標籤部分結束 --- */}
+
 
             <FormGroup>
               <label htmlFor="date">日期:</label>
