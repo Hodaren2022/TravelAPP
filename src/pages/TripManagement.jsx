@@ -68,7 +68,7 @@ const ButtonGroup = styled.div`
 `
 
 const Button = styled.button`
-  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  background-color: ${props => props.$primary ? '#3498db' : '#e74c3c'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -109,7 +109,8 @@ const TripManagement = () => {
     arrivalCity: '',
     departureTime: '',
     arrivalTime: '',
-    customAirline: ''
+    customAirline: '',
+    duration: ''
   });
   
   const [isEditing, setIsEditing] = useState(false);
@@ -121,7 +122,41 @@ const TripManagement = () => {
   
   const handleFlightInputChange = (e) => {
     const { name, value } = e.target;
-    setNewFlight(prev => ({ ...prev, [name]: value }));
+    const updatedFlight = { ...newFlight, [name]: value };
+    
+    // 當起飛時間或降落時間變更時，計算飛行時間
+    if (name === 'departureTime' || name === 'arrivalTime') {
+      if (updatedFlight.departureTime && updatedFlight.arrivalTime) {
+        updatedFlight.duration = calculateFlightDuration(
+          updatedFlight.departureTime,
+          updatedFlight.arrivalTime
+        );
+      }
+    }
+    
+    setNewFlight(updatedFlight);
+  };
+  
+  // 計算飛行時間函數
+  const calculateFlightDuration = (departureTime, arrivalTime) => {
+    // 創建日期對象用於計算時間差
+    const departureDate = new Date(`2000-01-01T${departureTime}:00`);
+    const arrivalDate = new Date(`2000-01-01T${arrivalTime}:00`);
+    
+    // 處理跨日航班（如果降落時間早於起飛時間，表示跨日）
+    if (arrivalDate < departureDate) {
+      arrivalDate.setDate(arrivalDate.getDate() + 1);
+    }
+    
+    // 計算時間差（毫秒）
+    const durationMs = arrivalDate - departureDate;
+    
+    // 轉換為小時和分鐘
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    // 格式化為 小時小時分鐘分 的格式
+    return `${hours}小時${minutes}分`;
   };
   
   // 排序航班函數 - 按日期和時間排序，日期時間較近的排在上方
@@ -150,9 +185,19 @@ const TripManagement = () => {
       airlineName = newFlight.customAirline;
     }
     
+    // 確保飛行時間已計算
+    let flightDuration = newFlight.duration;
+    if (!flightDuration && newFlight.departureTime && newFlight.arrivalTime) {
+      flightDuration = calculateFlightDuration(
+        newFlight.departureTime,
+        newFlight.arrivalTime
+      );
+    }
+    
     const flight = {
       ...newFlight,
       airline: airlineName,
+      duration: flightDuration,
       id: Date.now().toString()
     };
     
@@ -175,7 +220,8 @@ const TripManagement = () => {
       arrivalCity: '',
       departureTime: '',
       arrivalTime: '',
-      customAirline: ''
+      customAirline: '',
+      duration: ''
     });
   };
   
@@ -222,7 +268,34 @@ const TripManagement = () => {
   };
   
   const handleEdit = (trip) => {
-    setNewTrip(trip);
+    // 檢查並計算所有航班的飛行時間
+    if (trip.flights && trip.flights.length > 0) {
+      const updatedFlights = trip.flights.map(flight => {
+        // 如果航班已有飛行時間或缺少起飛/降落時間，則保持不變
+        if (flight.duration || !flight.departureTime || !flight.arrivalTime) {
+          return flight;
+        }
+        
+        // 計算並添加飛行時間
+        const duration = calculateFlightDuration(
+          flight.departureTime,
+          flight.arrivalTime
+        );
+        
+        return {
+          ...flight,
+          duration
+        };
+      });
+      
+      setNewTrip({
+        ...trip,
+        flights: updatedFlights
+      });
+    } else {
+      setNewTrip(trip);
+    }
+    
     setIsEditing(true);
   };
   
@@ -404,7 +477,7 @@ const TripManagement = () => {
           
           <Button 
             type="button" 
-            primary 
+            $primary 
             onClick={addFlight}
             style={{ marginTop: '0.5rem' }}
           >
@@ -422,6 +495,7 @@ const TripManagement = () => {
                     <th>航班編號</th>
                     <th>起飛/降落城市</th>
                     <th>起飛/降落時間</th>
+                    <th>飛行時間</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -433,6 +507,7 @@ const TripManagement = () => {
                       <td>{flight.flightNumber}</td>
                       <td>{flight.departureCity}/{flight.arrivalCity}</td>
                       <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                      <td>{flight.duration || '-'}</td>
                       <td>
                         <Button onClick={() => removeFlight(flight.id)}>刪除</Button>
                       </td>
@@ -445,7 +520,7 @@ const TripManagement = () => {
         </FormSection>
         
         <ButtonGroup>
-          <Button primary type="submit">
+          <Button $primary type="submit">
             {isEditing ? '更新行程' : '新增行程'}
           </Button>
           {isEditing && (
@@ -489,6 +564,7 @@ const TripManagement = () => {
                         <th>航班編號</th>
                         <th>起飛/降落城市</th>
                         <th>起飛/降落時間</th>
+                        <th>飛行時間</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -499,6 +575,7 @@ const TripManagement = () => {
                           <td>{flight.flightNumber}</td>
                           <td>{flight.departureCity}/{flight.arrivalCity}</td>
                           <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                          <td>{flight.duration || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -507,7 +584,7 @@ const TripManagement = () => {
               )}
               
               <ButtonGroup>
-                <Button primary onClick={() => handleEdit(trip)}>編輯</Button>
+                <Button $primary onClick={() => handleEdit(trip)}>編輯</Button>
                 <Button onClick={() => handleDelete(trip.id)}>刪除</Button>
               </ButtonGroup>
             </TripCard>

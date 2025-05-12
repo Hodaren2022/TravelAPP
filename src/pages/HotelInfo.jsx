@@ -34,7 +34,7 @@ const ButtonGroup = styled.div`
 `
 
 const Button = styled.button`
-  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  background-color: ${props => props.$primary ? '#3498db' : '#e74c3c'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -249,7 +249,7 @@ const HotelInfo = () => {
             </div>
             
             <ButtonGroup>
-              <Button primary type="submit">
+              <Button $primary type="submit">
                 {isEditing ? '更新旅館資訊' : '新增旅館資訊'}
               </Button>
               {isEditing && (
@@ -293,7 +293,7 @@ const HotelInfo = () => {
                     <p><strong>備註:</strong> {hotel.notes}</p>
                   )}
                   <ButtonGroup>
-                    <Button primary onClick={() => handleEdit(hotel)}>編輯</Button>
+                    <Button $primary onClick={() => handleEdit(hotel)}>編輯</Button>
                     <Button onClick={() => handleDelete(hotel.id)}>刪除</Button>
                   </ButtonGroup>
                 </HotelCard>

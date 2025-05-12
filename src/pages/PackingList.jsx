@@ -82,7 +82,7 @@ const ButtonGroup = styled.div`
 `
 
 const Button = styled.button`
-  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  background-color: ${props => props.$primary ? '#3498db' : '#e74c3c'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -440,7 +440,7 @@ const PackingList = () => {
             </div>
             
             <ButtonGroup>
-              <Button primary type="submit">
+              <Button $primary type="submit">
                 {isEditing ? '更新物品' : '新增物品'}
               </Button>
               {isEditing && (
@@ -498,7 +498,7 @@ const PackingList = () => {
                         </span>
                       </ItemButton>
                       <ButtonGroup>
-                        <Button primary onClick={() => handleEdit(item)}>編輯</Button>
+                        <Button $primary onClick={() => handleEdit(item)}>編輯</Button>
                         <Button onClick={() => handleDelete(item.id)}>刪除</Button>
                       </ButtonGroup>
                     </ItemRow>

@@ -34,7 +34,7 @@ const ButtonGroup = styled.div`
 `
 
 const Button = styled.button`
-  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  background-color: ${props => props.$primary ? '#3498db' : '#e74c3c'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -219,7 +219,7 @@ const TravelTips = () => {
             </div>
             
             <ButtonGroup>
-              <Button primary type="submit">
+              <Button $primary type="submit">
                 {isEditing ? '更新旅遊須知' : '新增旅遊須知'}
               </Button>
               {isEditing && (
@@ -275,7 +275,7 @@ const TravelTips = () => {
                   </div>
                   <p style={{ whiteSpace: 'pre-line' }}>{tip.content}</p>
                   <ButtonGroup>
-                    <Button primary onClick={() => handleEdit(tip)}>編輯</Button>
+                    <Button $primary onClick={() => handleEdit(tip)}>編輯</Button>
                     <Button onClick={() => handleDelete(tip.id)}>刪除</Button>
                   </ButtonGroup>
                 </TipCard>

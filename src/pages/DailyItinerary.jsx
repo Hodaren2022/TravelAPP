@@ -41,7 +41,7 @@ const ButtonGroup = styled.div`
 `
 
 const Button = styled.button`
-  background-color: ${props => props.primary ? '#3498db' : '#e74c3c'};
+  background-color: ${props => props.$primary ? '#3498db' : '#e74c3c'};
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -257,7 +257,7 @@ const DailyItinerary = () => {
             </div>
             
             <ButtonGroup>
-              <Button primary type="submit">
+              <Button $primary type="submit">
                 {isEditing ? '更新活動' : '新增活動'}
               </Button>
               {isEditing && (
@@ -295,7 +295,7 @@ const DailyItinerary = () => {
                             <p><strong>{activity.time}</strong> - {activity.description}</p>
                             {activity.location && <p>地點: {activity.location}</p>}
                             <ButtonGroup>
-                              <Button primary onClick={() => handleEdit(activity)}>編輯</Button>
+                              <Button $primary onClick={() => handleEdit(activity)}>編輯</Button>
                               <Button onClick={() => handleDelete(day.value, activity.id)}>刪除</Button>
                             </ButtonGroup>
                           </ActivityCard>

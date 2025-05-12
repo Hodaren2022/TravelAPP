@@ -8,6 +8,8 @@ import HotelInfo from './pages/HotelInfo'
 import TravelTips from './pages/TravelTips'
 import PackingList from './pages/PackingList'
 import TravelNotes from './pages/TravelNotes'
+import DataManagement from './pages/DataManagement'
+import ExpenseTracker from './pages/ExpenseTracker'
 
 // 上下文提供者
 import { TripProvider } from './contexts/TripContext'
@@ -77,6 +79,8 @@ function App() {
           <NavItem to="/tips">旅遊須知</NavItem>
           <NavItem to="/packing">物品清單</NavItem>
           <NavItem to="/notes">旅遊筆記</NavItem>
+          <NavItem to="/expenses">消費追蹤</NavItem>
+          <NavItem to="/data">數據管理</NavItem>
         </Navigation>
         
         <MainContent>
@@ -87,6 +91,8 @@ function App() {
             <Route path="/tips" element={<TravelTips />} />
             <Route path="/packing" element={<PackingList />} />
             <Route path="/notes" element={<TravelNotes />} />
+            <Route path="/expenses" element={<ExpenseTracker />} />
+            <Route path="/data" element={<DataManagement />} />
           </Routes>
         </MainContent>
         
