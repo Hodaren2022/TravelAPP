@@ -145,7 +145,7 @@ const ExpenseTracker = () => {
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '', // 這個欄位似乎沒有被直接使用於表單，可以考慮是否移除
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0], // 這裡仍然只儲存日期用於日期輸入框
     currencyPair: currencyPairs[0].id, // 這個欄位似乎沒有被直接使用於表單，可以考慮是否移除
     fromAmount: '', // 這個欄位似乎沒有被直接使用於表單，可以考慮是否移除
     toAmount: '', // 這個欄位似乎沒有被直接使用於表單，可以考慮是否移除
@@ -282,12 +282,12 @@ const ExpenseTracker = () => {
         // 如果手動匯率被清空或無效，且之前是手動模式，則可以選擇清空toAmount或用自動匯率重算
         //setToAmount(''); // 或者用自動匯率重算
           if (!useManualRate && exchangeRates[getCurrentPair().toCode]) { // 確保不是在手動模式下清空，且有自動匯率
-             const autoRate = exchangeRates[getCurrentPair().toCode] || 0;
-             const converted = (parseFloat(fromAmount) * autoRate).toFixed(2);
-             setToAmount(converted);
-         } else {
-             setToAmount('');
-         }
+            const autoRate = exchangeRates[getCurrentPair().toCode] || 0;
+            const converted = (parseFloat(fromAmount) * autoRate).toFixed(2);
+            setToAmount(converted);
+          } else {
+            setToAmount('');
+          }
     }
   };
 
@@ -356,6 +356,10 @@ const ExpenseTracker = () => {
     const expense = {
       id: Date.now().toString(),
       description: newExpense.description,
+      // Capture current date AND time for recording
+      // Using new Date().toISOString() captures the exact moment of recording
+      dateTime: new Date().toISOString(),
+      // Also keep the date field from the form for the input display
       date: newExpense.date,
       currencyPair: selectedPair,
       fromCurrency: pair.fromCode,
@@ -370,10 +374,11 @@ const ExpenseTracker = () => {
       [selectedTripId]: [...(prev[selectedTripId] || []), expense]
     }));
 
-    // 重置表單 (不重置手動匯率和模式)
+    // Reset form (do not reset manual rate and mode for continuity)
     setNewExpense({
       description: '',
       amount: '',
+      // Keep the date input as today's date by default for the next entry
       date: new Date().toISOString().split('T')[0],
       currencyPair: currencyPairs[0].id,
       fromAmount: '',
@@ -384,6 +389,8 @@ const ExpenseTracker = () => {
     setToAmount('');
     // setManualRate(''); // 記錄後不清空手動匯率，方便連續記錄
     // setUseManualRate(false); // 記錄後不清空手動匯率模式，方便連續記錄
+
+    // Removed the alert message here as requested. (Confirmed it was not present in the provided code)
   };
 
   // 刪除消費記錄
@@ -399,16 +406,29 @@ const ExpenseTracker = () => {
   // 獲取選定行程的消費記錄
   const selectedTripExpenses = selectedTripId ? (expenses[selectedTripId] || []) : [];
 
-  // 按日期排序消費記錄（最新的在前面）
-  const sortedExpenses = [...selectedTripExpenses].sort((a, b) =>
-    new Date(b.date) - new Date(a.date)
-  );
+  // Sort by dateTime if available, falling back to date
+  const sortedExpenses = [...selectedTripExpenses].sort((a, b) => {
+      const dateA = a.dateTime ? new Date(a.dateTime) : new Date(a.date);
+      const dateB = b.dateTime ? new Date(b.dateTime) : new Date(b.date);
+      return dateB - dateA; // Sort descending (latest first)
+  });
 
-  // 格式化日期顯示
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
+
+  // Format function to display date and time for new entries, or just date for old ones
+  const formatDateTime = (dateTimeString) => {
+    if (!dateTimeString) return 'N/A Date/Time'; // Should not happen with new data, but for safety
+    const date = new Date(dateTimeString);
+    // Use toLocaleString to get both date and time based on locale
+    return date.toLocaleString();
   };
+
+  // Function to format date only for older entries without dateTime
+  const formatDateOnly = (dateString) => {
+     if (!dateString) return 'N/A Date';
+     const date = new Date(dateString);
+     return date.toLocaleDateString();
+  }
+
 
   const currentPairDetails = getCurrentPair();
   const currentEffectiveRate = getCurrentRate();
@@ -555,7 +575,8 @@ const ExpenseTracker = () => {
 
 
             <FormGroup>
-              <label htmlFor="date">日期:</label>
+              {/* Keeping the date input field as it seems intended for selecting the date of the expense */}
+              <label htmlFor="date">消費日期:</label>
               <input
                 type="date"
                 id="date"
@@ -580,7 +601,8 @@ const ExpenseTracker = () => {
                     <div>
                       <div><strong>{expense.description}</strong></div>
                       <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                        {formatDate(expense.date)} ·
+                        {/* Use formatDateTime for new data (has dateTime) or formatDateOnly for old data (only has date) */}
+                        {expense.dateTime ? formatDateTime(expense.dateTime) : formatDateOnly(expense.date)} ·
                         {expense.fromAmount.toFixed(2)} {expense.fromCurrency} =
                         {expense.toAmount.toFixed(2)} {expense.toCurrency} ·
                         匯率: {expense.rate.toFixed(4)}
