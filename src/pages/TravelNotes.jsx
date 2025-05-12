@@ -387,7 +387,8 @@ const TravelNotes = () => {
             <QuickTextContainer>
               <div>
                 <label>筆記模板：</label>
-                <QuickTextSection style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {/* MODIFICATION HERE: Added align-items: flex-start to the style */}
+                <QuickTextSection style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-start' }}>
                   {noteTemplates.map(template => (
                     <QuickTextButton key={template} onClick={() => handleQuickTextClick(template + '\n')} style={{ textAlign: 'left', margin: '2px 0' }}>
                       {template}

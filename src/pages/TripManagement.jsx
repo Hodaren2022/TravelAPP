@@ -117,7 +117,22 @@ const TripManagement = () => {
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewTrip(prev => ({ ...prev, [name]: value }));
+
+    // Create a temporary object with the updated value
+    const updatedTrip = { ...newTrip, [name]: value };
+
+    setNewTrip(updatedTrip);
+
+    // Validate dates immediately if either date changed
+    if (name === 'startDate' || name === 'endDate') {
+      const startDate = new Date(updatedTrip.startDate);
+      const endDate = new Date(updatedTrip.endDate);
+
+      // Check if both dates are selected and endDate is before startDate
+      if (updatedTrip.startDate && updatedTrip.endDate && endDate < startDate) {
+        alert("結束日期不能早於開始日期，請檢查您的日期輸入。\n\n請注意：日期輸入錯誤可能導致每日行程頁面無法正常顯示與編輯。");
+      }
+    }
   };
   
   const handleFlightInputChange = (e) => {
@@ -235,6 +250,15 @@ const TripManagement = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Re-validate dates on submit just in case
+    const startDate = new Date(newTrip.startDate);
+    const endDate = new Date(newTrip.endDate);
+
+    if (endDate < startDate) {
+      alert("結束日期不能早於開始日期，請檢查您的日期輸入。\n\n請注意：日期輸入錯誤可能導致每日行程頁面無法正常顯示與編輯。");
+      return; // Prevent form submission
+    }
+
     if (isEditing) {
       setTrips(trips.map(trip => trip.id === newTrip.id ? newTrip : trip));
       setIsEditing(false);
@@ -532,7 +556,19 @@ const TripManagement = () => {
                 destination: '',
                 startDate: '',
                 endDate: '',
-                description: ''
+                description: '',
+                flights: [] // Reset flights as well when cancelling edit
+              });
+              setNewFlight({ // Reset new flight form as well
+                date: '',
+                airline: '',
+                flightNumber: '',
+                departureCity: '',
+                arrivalCity: '',
+                departureTime: '',
+                arrivalTime: '',
+                customAirline: '',
+                duration: ''
               });
             }}>
               取消
