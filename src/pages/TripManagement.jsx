@@ -483,7 +483,14 @@ const TripManagement = () => {
   };
 
   const handleDelete = (id) => {
-    setTrips(trips.filter(trip => trip.id !== id));
+    // 顯示確認對話框，詢問用戶是否確定要刪除該行程
+    const isConfirmed = window.confirm("確定要刪除此行程嗎？此操作無法復原。");
+    
+    // 只有當用戶點擊確認後，才執行刪除操作
+    if (isConfirmed) {
+      setTrips(trips.filter(trip => trip.id !== id));
+    }
+    // 如果用戶點擊取消，則不執行任何操作
   };
 
   return (
