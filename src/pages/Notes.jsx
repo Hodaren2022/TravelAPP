@@ -136,7 +136,7 @@ const Notes = () => {
     setNewNote(e.target.value);
   };
   
-  // 插入代辦按鈕
+  // 插入待辦按鈕
   const handleInsertCheckbox = () => {
     const checkboxPlaceholder = '[待辦] ';
     setNewNote(prev => prev + checkboxPlaceholder);
@@ -170,9 +170,9 @@ const Notes = () => {
     setNewNote('');
   };
   
-  // 處理記事中的代辦按鈕
+  // 處理記事中的待辦按鈕
   const processCheckboxes = (text) => {
-    // 將文本中的 [代辦] 標記轉換為帶有狀態的對象
+    // 將文本中的 [待辦] 標記轉換為帶有狀態的對象
     return text.replace(/\[待辦\]/g, (match, offset) => {
       const id = Date.now().toString() + offset;
       return `[CHECKBOX:${id}:false]`;
@@ -198,7 +198,7 @@ const Notes = () => {
   
   // 編輯記事
   const handleEditNote = (note) => {
-    // 將記事內容中的複選框標記轉換回 [代辦] 格式以便編輯
+    // 將記事內容中的複選框標記轉換回 [待辦] 格式以便編輯
     const editableContent = note.content.replace(/\[CHECKBOX:([^:]+):(true|false)\]/g, '[待辦]');
     setNewNote(editableContent);
     setEditingNote(note);
@@ -275,10 +275,10 @@ const Notes = () => {
               type="button" 
               onClick={handleInsertCheckbox}
             >
-              代辦
+              待辦
             </InsertCheckboxButton>
             <ButtonDescription>
-              插入代辦按鈕即可在新增筆記後變成代辦清單模式
+              插入待辦按鈕即可在新增筆記後變成待辦清單模式
             </ButtonDescription>
           </div>
           
