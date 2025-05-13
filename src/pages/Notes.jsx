@@ -138,7 +138,7 @@ const Notes = () => {
   
   // 插入代辦按鈕
   const handleInsertCheckbox = () => {
-    const checkboxPlaceholder = '[代辦] ';
+    const checkboxPlaceholder = '[待辦] ';
     setNewNote(prev => prev + checkboxPlaceholder);
   };
   
@@ -173,7 +173,7 @@ const Notes = () => {
   // 處理記事中的代辦按鈕
   const processCheckboxes = (text) => {
     // 將文本中的 [代辦] 標記轉換為帶有狀態的對象
-    return text.replace(/\[代辦\]/g, (match, offset) => {
+    return text.replace(/\[待辦\]/g, (match, offset) => {
       const id = Date.now().toString() + offset;
       return `[CHECKBOX:${id}:false]`;
     });
@@ -199,7 +199,7 @@ const Notes = () => {
   // 編輯記事
   const handleEditNote = (note) => {
     // 將記事內容中的複選框標記轉換回 [代辦] 格式以便編輯
-    const editableContent = note.content.replace(/\[CHECKBOX:([^:]+):(true|false)\]/g, '[代辦]');
+    const editableContent = note.content.replace(/\[CHECKBOX:([^:]+):(true|false)\]/g, '[待辦]');
     setNewNote(editableContent);
     setEditingNote(note);
   };
@@ -239,7 +239,7 @@ const Notes = () => {
           checked={state === 'true'}
           onClick={() => toggleCheckbox(note.id, checkboxId)}
         >
-          {state === 'true' ? '完成' : '代辦'}
+          {state === 'true' ? '完成' : '待辦'}
         </CheckboxButton>
       );
       
