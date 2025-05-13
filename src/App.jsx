@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
 import styled from 'styled-components'
+import { useState, useEffect } from 'react'
 
 // 頁面組件
 import TripManagement from './pages/TripManagement'
@@ -10,6 +11,8 @@ import PackingList from './pages/PackingList'
 import TravelNotes from './pages/TravelNotes'
 import DataManagement from './pages/DataManagement'
 import ExpenseTracker from './pages/ExpenseTracker'
+import Notes from './pages/Notes'
+import Settings from './pages/Settings'
 
 // 上下文提供者
 import { TripProvider } from './contexts/TripContext'
@@ -64,7 +67,49 @@ const Footer = styled.footer`
   padding: 1rem;
 `
 
+// 定義可用頁面列表
+const availablePages = [
+  { id: 'tripManagement', name: '行程管理', path: '/', component: TripManagement, default: true },
+  { id: 'dailyItinerary', name: '每日行程', path: '/daily', component: DailyItinerary, default: true },
+  { id: 'hotelInfo', name: '旅館資訊', path: '/hotel', component: HotelInfo, default: true },
+  { id: 'travelTips', name: '旅遊須知', path: '/tips', component: TravelTips, default: true },
+  { id: 'packingList', name: '物品清單', path: '/packing', component: PackingList, default: true },
+  { id: 'travelNotes', name: '旅遊筆記', path: '/notes', component: TravelNotes, default: true },
+  { id: 'expenseTracker', name: '消費追蹤', path: '/expenses', component: ExpenseTracker, default: true },
+  { id: 'notes', name: '記事本', path: '/notebook', component: Notes, default: true },
+  { id: 'dataManagement', name: '數據管理', path: '/data', component: DataManagement, default: true },
+  { id: 'settings', name: '設定', path: '/settings', component: Settings, default: true }
+];
+
 function App() {
+  // 從localStorage獲取頁面顯示設定
+  const [pageSettings, setPageSettings] = useState(() => {
+    const savedSettings = localStorage.getItem('pageSettings');
+    if (savedSettings) {
+      return JSON.parse(savedSettings);
+    } else {
+      // 如果沒有保存的設定，使用默認值
+      const defaultSettings = {};
+      availablePages.forEach(page => {
+        defaultSettings[page.id] = page.default;
+      });
+      return defaultSettings;
+    }
+  });
+
+  // 當localStorage中的設定變更時更新狀態
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedSettings = localStorage.getItem('pageSettings');
+      if (savedSettings) {
+        setPageSettings(JSON.parse(savedSettings));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <TripProvider>
       <AppContainer>
@@ -73,26 +118,21 @@ function App() {
         </Header>
         
         <Navigation>
-          <NavItem to="/" end>行程管理</NavItem>
-          <NavItem to="/daily">每日行程</NavItem>
-          <NavItem to="/hotel">旅館資訊</NavItem>
-          <NavItem to="/tips">旅遊須知</NavItem>
-          <NavItem to="/packing">物品清單</NavItem>
-          <NavItem to="/notes">旅遊筆記</NavItem>
-          <NavItem to="/expenses">消費追蹤</NavItem>
-          <NavItem to="/data">數據管理</NavItem>
+          {availablePages.map(page => (
+            // 根據設定決定是否顯示導航項目
+            pageSettings[page.id] && (
+              <NavItem key={page.id} to={page.path} end={page.path === '/'}>
+                {page.name}
+              </NavItem>
+            )
+          ))}
         </Navigation>
         
         <MainContent>
           <Routes>
-            <Route path="/" element={<TripManagement />} />
-            <Route path="/daily" element={<DailyItinerary />} />
-            <Route path="/hotel" element={<HotelInfo />} />
-            <Route path="/tips" element={<TravelTips />} />
-            <Route path="/packing" element={<PackingList />} />
-            <Route path="/notes" element={<TravelNotes />} />
-            <Route path="/expenses" element={<ExpenseTracker />} />
-            <Route path="/data" element={<DataManagement />} />
+            {availablePages.map(page => (
+              <Route key={page.id} path={page.path} element={<page.component />} />
+            ))}
           </Routes>
         </MainContent>
         
