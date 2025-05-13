@@ -109,6 +109,8 @@ const TripManagement = () => {
     arrivalCity: '',
     departureTime: '',
     arrivalTime: '',
+    departureTimezone: 'UTC+8',  // 預設台灣時區
+    arrivalTimezone: 'UTC+8',     // 預設台灣時區
     customAirline: '',
     duration: ''
   });
@@ -139,12 +141,14 @@ const TripManagement = () => {
     const { name, value } = e.target;
     const updatedFlight = { ...newFlight, [name]: value };
     
-    // 當起飛時間或降落時間變更時，計算飛行時間
-    if (name === 'departureTime' || name === 'arrivalTime') {
+    // 當起飛時間、降落時間或時區變更時，計算飛行時間
+    if (name === 'departureTime' || name === 'arrivalTime' || name === 'departureTimezone' || name === 'arrivalTimezone') {
       if (updatedFlight.departureTime && updatedFlight.arrivalTime) {
         updatedFlight.duration = calculateFlightDuration(
           updatedFlight.departureTime,
-          updatedFlight.arrivalTime
+          updatedFlight.arrivalTime,
+          updatedFlight.departureTimezone,
+          updatedFlight.arrivalTimezone
         );
       }
     }
@@ -152,8 +156,74 @@ const TripManagement = () => {
     setNewFlight(updatedFlight);
   };
   
-  // 計算飛行時間函數
-  const calculateFlightDuration = (departureTime, arrivalTime) => {
+  // 生成時區選項
+  const generateTimezoneOptions = () => {
+    const timezones = [];
+    // 時區與代表性國家對應表
+    const timezoneCountries = {
+      '-12': '',
+      '-11': '(美屬薩摩亞)',
+      '-10': '(夏威夷)',
+      '-9': '(阿拉斯加)',
+      '-8': '(美國西岸、加拿大溫哥華)',
+      '-7': '(美國山區、墨西哥)',
+      '-6': '(美國中部、墨西哥城)',
+      '-5': '(美國東岸、加拿大多倫多)',
+      '-4': '(加拿大、南美洲)',
+      '-3': '(巴西、阿根廷)',
+      '-2': '(大西洋中部)',
+      '-1': '(亞速爾群島)',
+      '0': '(英國、葡萄牙)',
+      '1': '(法國、德國)',
+      '2': '(芬蘭、希臘)',
+      '3': '(俄羅斯、土耳其)',
+      '4': '(阿拉伯聯合大公國)',
+      '5': '(巴基斯坦)',
+      '5.5': '(印度、斯里蘭卡)',
+      '6': '(孟加拉)',
+      '7': '(泰國、越南)',
+      '8': '(台灣、中國)',
+      '9': '(日本、韓國)',
+      '10': '(澳洲雪梨)',
+      '11': '(所羅門群島)',
+      '12': '(紐西蘭)',
+      '13': '(薩摩亞)',
+      '14': '(聖誕島)'
+    };
+    
+    for (let i = -12; i <= 14; i++) {
+      const sign = i >= 0 ? '+' : '';
+      // 處理特殊時區（如印度的UTC+5.5）
+      if (i === 5) {
+        timezones.push(`UTC+5`);
+        timezones.push(`UTC+5.5 ${timezoneCountries['5.5']}`);
+        continue;
+      }
+      
+      const annotation = timezoneCountries[i.toString()] || '';
+      timezones.push(`UTC${sign}${i} ${annotation}`);
+    }
+    return timezones;
+  };
+  
+  const timezoneOptions = generateTimezoneOptions();
+  
+  // 計算飛行時間函數，考慮時區差異
+  const calculateFlightDuration = (departureTime, arrivalTime, departureTimezone, arrivalTimezone) => {
+    // 解析時區偏移量（格式如 UTC+8 或 UTC-5）
+    const parseTimezoneOffset = (timezone) => {
+      if (!timezone) return 0;
+      const match = timezone.match(/UTC([+-]\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+      return 0;
+    };
+    
+    // 獲取時區偏移量（小時）
+    const departureOffset = parseTimezoneOffset(departureTimezone);
+    const arrivalOffset = parseTimezoneOffset(arrivalTimezone);
+    
     // 創建日期對象用於計算時間差
     const departureDate = new Date(`2000-01-01T${departureTime}:00`);
     const arrivalDate = new Date(`2000-01-01T${arrivalTime}:00`);
@@ -164,7 +234,17 @@ const TripManagement = () => {
     }
     
     // 計算時間差（毫秒）
-    const durationMs = arrivalDate - departureDate;
+    let durationMs = arrivalDate - departureDate;
+    
+    // 考慮時區差異（將時區差異轉換為毫秒）
+    const timezoneOffsetMs = (arrivalOffset - departureOffset) * 60 * 60 * 1000;
+    durationMs -= timezoneOffsetMs;
+    
+    // 確保飛行時間不為負數
+    if (durationMs < 0) {
+      // 如果計算結果為負，可能是跨日問題，再加24小時
+      durationMs += 24 * 60 * 60 * 1000;
+    }
     
     // 轉換為小時和分鐘
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
@@ -205,7 +285,9 @@ const TripManagement = () => {
     if (!flightDuration && newFlight.departureTime && newFlight.arrivalTime) {
       flightDuration = calculateFlightDuration(
         newFlight.departureTime,
-        newFlight.arrivalTime
+        newFlight.arrivalTime,
+        newFlight.departureTimezone,
+        newFlight.arrivalTimezone
       );
     }
     
@@ -235,6 +317,8 @@ const TripManagement = () => {
       arrivalCity: '',
       departureTime: '',
       arrivalTime: '',
+      departureTimezone: 'UTC+8',  // 保留預設時區
+      arrivalTimezone: 'UTC+8',     // 保留預設時區
       customAirline: '',
       duration: ''
     });
@@ -295,19 +379,28 @@ const TripManagement = () => {
     // 檢查並計算所有航班的飛行時間
     if (trip.flights && trip.flights.length > 0) {
       const updatedFlights = trip.flights.map(flight => {
+        // 確保每個航班都有時區信息
+        const flightWithTimezones = {
+          ...flight,
+          departureTimezone: flight.departureTimezone || 'UTC+8',
+          arrivalTimezone: flight.arrivalTimezone || 'UTC+8'
+        };
+        
         // 如果航班已有飛行時間或缺少起飛/降落時間，則保持不變
         if (flight.duration || !flight.departureTime || !flight.arrivalTime) {
-          return flight;
+          return flightWithTimezones;
         }
         
-        // 計算並添加飛行時間
+        // 計算並添加飛行時間，考慮時區差異
         const duration = calculateFlightDuration(
           flight.departureTime,
-          flight.arrivalTime
+          flight.arrivalTime,
+          flightWithTimezones.departureTimezone,
+          flightWithTimezones.arrivalTimezone
         );
         
         return {
-          ...flight,
+          ...flightWithTimezones,
           duration
         };
       });
@@ -488,6 +581,22 @@ const TripManagement = () => {
             </FormGroup>
             
             <FormGroup>
+              <label htmlFor="departureTimezone">起飛時區</label>
+              <select
+                id="departureTimezone"
+                name="departureTimezone"
+                value={newFlight.departureTimezone}
+                onChange={handleFlightInputChange}
+              >
+                {timezoneOptions.map(timezone => (
+                  <option key={timezone} value={timezone}>{timezone}</option>
+                ))}
+              </select>
+            </FormGroup>
+          </FormRow>
+          
+          <FormRow>
+            <FormGroup>
               <label htmlFor="arrivalTime">降落時間</label>
               <input
                 type="time"
@@ -496,6 +605,20 @@ const TripManagement = () => {
                 value={newFlight.arrivalTime}
                 onChange={handleFlightInputChange}
               />
+            </FormGroup>
+            
+            <FormGroup>
+              <label htmlFor="arrivalTimezone">降落時區</label>
+              <select
+                id="arrivalTimezone"
+                name="arrivalTimezone"
+                value={newFlight.arrivalTimezone}
+                onChange={handleFlightInputChange}
+              >
+                {timezoneOptions.map(timezone => (
+                  <option key={timezone} value={timezone}>{timezone}</option>
+                ))}
+              </select>
             </FormGroup>
           </FormRow>
           
@@ -518,7 +641,8 @@ const TripManagement = () => {
                     <th>航空公司</th>
                     <th>航班編號</th>
                     <th>起飛/降落城市</th>
-                    <th>起飛/降落時間</th>
+                    <th>起飛時間/時區</th>
+                    <th>降落時間/時區</th>
                     <th>飛行時間</th>
                     <th>操作</th>
                   </tr>
@@ -530,7 +654,8 @@ const TripManagement = () => {
                       <td>{flight.airline}</td>
                       <td>{flight.flightNumber}</td>
                       <td>{flight.departureCity}/{flight.arrivalCity}</td>
-                      <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                      <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8'})</td>
+                      <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8'})</td>
                       <td>{flight.duration || '-'}</td>
                       <td>
                         <Button onClick={() => removeFlight(flight.id)}>刪除</Button>
@@ -559,7 +684,8 @@ const TripManagement = () => {
                 description: '',
                 flights: [] // Reset flights as well when cancelling edit
               });
-              setNewFlight({ // Reset new flight form as well
+              // 使用重置航班表單函數
+              setNewFlight({
                 date: '',
                 airline: '',
                 flightNumber: '',
@@ -567,6 +693,8 @@ const TripManagement = () => {
                 arrivalCity: '',
                 departureTime: '',
                 arrivalTime: '',
+                departureTimezone: 'UTC+8',
+                arrivalTimezone: 'UTC+8',
                 customAirline: '',
                 duration: ''
               });
@@ -599,7 +727,8 @@ const TripManagement = () => {
                         <th>航空公司</th>
                         <th>航班編號</th>
                         <th>起飛/降落城市</th>
-                        <th>起飛/降落時間</th>
+                        <th>起飛時間/時區</th>
+                        <th>降落時間/時區</th>
                         <th>飛行時間</th>
                       </tr>
                     </thead>
@@ -610,7 +739,8 @@ const TripManagement = () => {
                           <td>{flight.airline}</td>
                           <td>{flight.flightNumber}</td>
                           <td>{flight.departureCity}/{flight.arrivalCity}</td>
-                          <td>{flight.departureTime}/{flight.arrivalTime}</td>
+                          <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8'})</td>
+                          <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8'})</td>
                           <td>{flight.duration || '-'}</td>
                         </tr>
                       ))}

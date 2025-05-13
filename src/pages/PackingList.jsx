@@ -447,15 +447,23 @@ const PackingList = () => {
               />
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
-              <input
-                type="checkbox"
-                id="isPacked"
-                name="isPacked"
-                checked={newItem.isPacked}
-                onChange={handleInputChange}
-              />
-              <label htmlFor="isPacked" style={{ marginLeft: '0.5rem' }}>已打包</label>
+            <div style={{ marginBottom: '1rem' }}>
+              <Button 
+                type="button"
+                style={{
+                  backgroundColor: newItem.isPacked ? '#4CAF50' : '#f0f0f0',
+                  color: newItem.isPacked ? 'white' : 'black',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'center'
+                }}
+                onClick={() => setNewItem(prev => ({ ...prev, isPacked: !prev.isPacked }))}
+              >
+                {newItem.isPacked ? '✓ 已打包' : '標記為已打包'}
+              </Button>
             </div>
             
             <ButtonGroup>
