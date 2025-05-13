@@ -43,6 +43,15 @@ const FormRow = styled.div`
 const FormGroup = styled.div`
   flex: 1;
   margin-bottom: 0.5rem;
+  
+  input, select, textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: ${props => props.$editing ? '#fff8e6' : 'white'};
+    transition: background-color 0.3s ease;
+  }
 `
 
 const FlightTable = styled.table`
@@ -116,6 +125,8 @@ const TripManagement = () => {
   });
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingFlight, setIsEditingFlight] = useState(false);
+  const [editingFlightId, setEditingFlightId] = useState(null);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -273,6 +284,24 @@ const TripManagement = () => {
     });
   };
   
+  const handleEditFlight = (flight) => {
+    // 將選中的航班信息加載到表單中
+    setNewFlight({
+      ...flight,
+      // 確保時區信息存在，如果不存在則使用預設值
+      departureTimezone: flight.departureTimezone || 'UTC+8',
+      arrivalTimezone: flight.arrivalTimezone || 'UTC+8',
+      // 如果航空公司是自定義的（不在預設列表中），則設置為「其他」
+      airline: taiwanAirlines.includes(flight.airline) ? flight.airline : '其他',
+      // 如果是自定義航空公司，保存到customAirline字段
+      customAirline: taiwanAirlines.includes(flight.airline) ? '' : flight.airline
+    });
+    
+    // 設置編輯狀態和編輯中的航班ID
+    setIsEditingFlight(true);
+    setEditingFlightId(flight.id);
+  };
+  
   const addFlight = () => {
     // 處理自定義航空公司
     let airlineName = newFlight.airline;
@@ -291,22 +320,50 @@ const TripManagement = () => {
       );
     }
     
-    const flight = {
-      ...newFlight,
-      airline: airlineName,
-      duration: flightDuration,
-      id: Date.now().toString()
-    };
-    
-    setNewTrip(prev => {
-      // 添加新航班並排序
-      const updatedFlights = sortFlights([...(prev.flights || []), flight]);
+    if (isEditingFlight) {
+      // 更新現有航班
+      setNewTrip(prev => {
+        const updatedFlights = prev.flights.map(flight => {
+          if (flight.id === editingFlightId) {
+            return {
+              ...newFlight,
+              airline: airlineName,
+              duration: flightDuration,
+              id: editingFlightId
+            };
+          }
+          return flight;
+        });
+        
+        // 排序更新後的航班
+        return {
+          ...prev,
+          flights: sortFlights(updatedFlights)
+        };
+      });
       
-      return {
-        ...prev,
-        flights: updatedFlights
+      // 重置編輯狀態
+      setIsEditingFlight(false);
+      setEditingFlightId(null);
+    } else {
+      // 添加新航班
+      const flight = {
+        ...newFlight,
+        airline: airlineName,
+        duration: flightDuration,
+        id: Date.now().toString()
       };
-    });
+      
+      setNewTrip(prev => {
+        // 添加新航班並排序
+        const updatedFlights = sortFlights([...(prev.flights || []), flight]);
+        
+        return {
+          ...prev,
+          flights: updatedFlights
+        };
+      });
+    }
     
     // 重置航班表單
     setNewFlight({
@@ -371,7 +428,10 @@ const TripManagement = () => {
       arrivalCity: '',
       departureTime: '',
       arrivalTime: '',
-      customAirline: ''
+      departureTimezone: 'UTC+8',  // 預設台灣時區
+      arrivalTimezone: 'UTC+8',     // 預設台灣時區
+      customAirline: '',
+      duration: ''
     });
   };
   
@@ -425,9 +485,11 @@ const TripManagement = () => {
       <h2>行程管理</h2>
       
       <TripForm onSubmit={handleSubmit}>
-        <h3>{isEditing ? '編輯行程' : '新增行程'}</h3>
+        <h3>
+          {isEditing ? '編輯行程（黃色背景表示正在編輯）' : '新增行程'}
+        </h3>
         
-        <div>
+        <FormGroup $editing={isEditing}>
           <label htmlFor="name">行程名稱</label>
           <input
             type="text"
@@ -437,9 +499,9 @@ const TripManagement = () => {
             onChange={handleInputChange}
             required
           />
-        </div>
+        </FormGroup>
         
-        <div>
+        <FormGroup $editing={isEditing}>
           <label htmlFor="destination">目的地</label>
           <input
             type="text"
@@ -449,9 +511,9 @@ const TripManagement = () => {
             onChange={handleInputChange}
             required
           />
-        </div>
+        </FormGroup>
         
-        <div>
+        <FormGroup $editing={isEditing}>
           <label htmlFor="startDate">開始日期</label>
           <input
             type="date"
@@ -461,9 +523,9 @@ const TripManagement = () => {
             onChange={handleInputChange}
             required
           />
-        </div>
+        </FormGroup>
         
-        <div>
+        <FormGroup $editing={isEditing}>
           <label htmlFor="endDate">結束日期</label>
           <input
             type="date"
@@ -473,9 +535,9 @@ const TripManagement = () => {
             onChange={handleInputChange}
             required
           />
-        </div>
+        </FormGroup>
         
-        <div>
+        <FormGroup $editing={isEditing}>
           <label htmlFor="description">行程描述</label>
           <textarea
             id="description"
@@ -484,13 +546,18 @@ const TripManagement = () => {
             onChange={handleInputChange}
             rows="4"
           ></textarea>
-        </div>
+        </FormGroup>
         
         <FormSection>
-          <h4>航班資訊（選填）</h4>
+          <h4>
+            {isEditingFlight ? 
+              '編輯航班資訊（黃色背景表示正在編輯）' : 
+              '航班資訊（選填）'
+            }
+          </h4>
           
           <FormRow>
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="flightDate">日期</label>
               <input
                 type="date"
@@ -501,7 +568,7 @@ const TripManagement = () => {
               />
             </FormGroup>
             
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="airline">航空公司</label>
               <select
                 id="airline"
@@ -517,7 +584,7 @@ const TripManagement = () => {
             </FormGroup>
             
             {newFlight.airline === '其他' && (
-              <FormGroup>
+              <FormGroup $editing={isEditingFlight}>
                 <label htmlFor="customAirline">自定義航空公司</label>
                 <input
                   type="text"
@@ -531,7 +598,7 @@ const TripManagement = () => {
           </FormRow>
           
           <FormRow>
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="flightNumber">航班編號</label>
               <input
                 type="text"
@@ -545,7 +612,7 @@ const TripManagement = () => {
           </FormRow>
           
           <FormRow>
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="departureCity">起飛城市</label>
               <input
                 type="text"
@@ -556,7 +623,7 @@ const TripManagement = () => {
               />
             </FormGroup>
             
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="arrivalCity">降落城市</label>
               <input
                 type="text"
@@ -569,7 +636,7 @@ const TripManagement = () => {
           </FormRow>
           
           <FormRow>
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="departureTime">起飛時間</label>
               <input
                 type="time"
@@ -580,7 +647,7 @@ const TripManagement = () => {
               />
             </FormGroup>
             
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="departureTimezone">起飛時區</label>
               <select
                 id="departureTimezone"
@@ -596,7 +663,7 @@ const TripManagement = () => {
           </FormRow>
           
           <FormRow>
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="arrivalTime">降落時間</label>
               <input
                 type="time"
@@ -607,7 +674,7 @@ const TripManagement = () => {
               />
             </FormGroup>
             
-            <FormGroup>
+            <FormGroup $editing={isEditingFlight}>
               <label htmlFor="arrivalTimezone">降落時區</label>
               <select
                 id="arrivalTimezone"
@@ -622,14 +689,41 @@ const TripManagement = () => {
             </FormGroup>
           </FormRow>
           
-          <Button 
-            type="button" 
-            $primary 
-            onClick={addFlight}
-            style={{ marginTop: '0.5rem' }}
-          >
-            新增航班
-          </Button>
+          <ButtonGroup style={{ marginTop: '0.5rem' }}>
+            <Button 
+              type="button" 
+              $primary 
+              onClick={addFlight}
+            >
+              {isEditingFlight ? '更新航班' : '新增航班'}
+            </Button>
+            
+            {isEditingFlight && (
+              <Button 
+                type="button" 
+                onClick={() => {
+                  // 取消編輯，重置表單
+                  setIsEditingFlight(false);
+                  setEditingFlightId(null);
+                  setNewFlight({
+                    date: '',
+                    airline: '',
+                    flightNumber: '',
+                    departureCity: '',
+                    arrivalCity: '',
+                    departureTime: '',
+                    arrivalTime: '',
+                    departureTimezone: 'UTC+8',
+                    arrivalTimezone: 'UTC+8',
+                    customAirline: '',
+                    duration: ''
+                  });
+                }}
+              >
+                取消編輯
+              </Button>
+            )}
+          </ButtonGroup>
           
           {newTrip.flights && newTrip.flights.length > 0 && (
             <div style={{ marginTop: '1rem' }}>
@@ -649,7 +743,12 @@ const TripManagement = () => {
                 </thead>
                 <tbody>
                   {sortFlights(newTrip.flights).map(flight => (
-                    <tr key={flight.id}>
+                    <tr 
+                      key={flight.id} 
+                      style={{
+                        backgroundColor: flight.id === editingFlightId ? '#fff8e6' : 'transparent',
+                      }}
+                    >
                       <td>{flight.date}</td>
                       <td>{flight.airline}</td>
                       <td>{flight.flightNumber}</td>
@@ -658,7 +757,18 @@ const TripManagement = () => {
                       <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8'})</td>
                       <td>{flight.duration || '-'}</td>
                       <td>
-                        <Button onClick={() => removeFlight(flight.id)}>刪除</Button>
+                        <ButtonGroup>
+                          <Button $primary type="button" onClick={(e) => {
+                            e.preventDefault(); // 防止事件冒泡觸發表單提交
+                            e.stopPropagation(); // 阻止事件傳播
+                            handleEditFlight(flight);
+                          }}>編輯</Button>
+                          <Button type="button" onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeFlight(flight.id);
+                          }}>刪除</Button>
+                        </ButtonGroup>
                       </td>
                     </tr>
                   ))}

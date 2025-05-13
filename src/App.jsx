@@ -50,11 +50,13 @@ const Navigation = styled.nav`
   
   @media (max-width: 768px) {
     padding: 0.3rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
   
   @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
   }
 `
@@ -76,11 +78,13 @@ const NavItem = styled(NavLink)`
   @media (max-width: 768px) {
     font-size: 0.9rem;
     padding: 0.4rem;
+    text-align: center;
+    display: block;
   }
   
   @media (max-width: 480px) {
-    width: 90%;
     text-align: center;
+    display: block;
   }
 `
 
