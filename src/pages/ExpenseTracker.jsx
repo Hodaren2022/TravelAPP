@@ -15,6 +15,11 @@ const Card = styled.div`
   margin-bottom: 1rem;
 `;
 
+const TotalExpenseCard = styled(Card)`
+  background-color: #f8f9fa;
+  border-left: 4px solid #3498db;
+`;
+
 const FormGroup = styled.div`
   margin-bottom: 1rem;
 `;
@@ -24,12 +29,22 @@ const CurrencyConverterContainer = styled.div`
   flex-direction: column;
   gap: 1rem;
   margin-bottom: 1rem;
+  
+  @media (max-width: 768px) {
+    gap: 0.8rem;
+  }
 `;
 
 const CurrencyRow = styled.div`
   display: flex;
   gap: 1rem;
   align-items: center;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
 `;
 
 const InputGroup = styled.div`
@@ -43,6 +58,10 @@ const ButtonGroup = styled.div`
   gap: 0.5rem;
   margin-top: 0.5rem; /* 調整與上方元素的間距 */
   margin-bottom: 1rem; /* 新增與下方元素的間距 */
+  
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+  }
 `;
 
 const Button = styled.button`
@@ -79,6 +98,11 @@ const ExpenseItem = styled.div`
   }
 `;
 
+const ExpenseAmount = styled.span`
+  font-weight: bold;
+  font-size: 1.2rem;
+`;
+
 const RateInfoText = styled.div`
   font-size: 0.8rem;
   color: #666;
@@ -94,6 +118,10 @@ const DescriptionTags = styled.div`
   flex-wrap: wrap; /* 讓標籤可以換行 */
   gap: 0.5rem;
   margin-top: 0.5rem; /* 標籤上方空間 */
+  
+  @media (max-width: 480px) {
+    gap: 0.3rem;
+  }
 `;
 
 // 新增用於描述標籤的 styled component 個別標籤
@@ -434,6 +462,17 @@ const ExpenseTracker = () => {
   const currentEffectiveRate = getCurrentRate();
 
 
+  // 計算總花費（以新台幣為單位）
+  const calculateTotalExpense = () => {
+    if (!selectedTripId || !selectedTripExpenses.length) return 0;
+    
+    return selectedTripExpenses.reduce((total, expense) => {
+      return total + expense.fromAmount;
+    }, 0);
+  };
+
+  const totalExpense = calculateTotalExpense();
+
   return (
     <Container>
       <h2>消費追蹤</h2>
@@ -453,6 +492,15 @@ const ExpenseTracker = () => {
           ))}
         </select>
       </FormGroup>
+      
+      {selectedTripId && (
+        <TotalExpenseCard>
+          <h3>總花費</h3>
+          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+            {totalExpense.toFixed(2)} TWD
+          </div>
+        </TotalExpenseCard>
+      )}
 
       {selectedTripId ? (
         <>
@@ -601,11 +649,15 @@ const ExpenseTracker = () => {
                     <div>
                       <div><strong>{expense.description}</strong></div>
                       <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                        {/* Use formatDateTime for new data (has dateTime) or formatDateOnly for old data (only has date) */}
-                        {expense.dateTime ? formatDateTime(expense.dateTime) : formatDateOnly(expense.date)} ·
-                        {expense.fromAmount.toFixed(2)} {expense.fromCurrency} =
-                        {expense.toAmount.toFixed(2)} {expense.toCurrency} ·
-                        匯率: {expense.rate.toFixed(4)}
+                        <ExpenseAmount>
+                          {expense.fromAmount.toFixed(2)} {expense.fromCurrency} =
+                          {expense.toAmount.toFixed(2)} {expense.toCurrency}
+                        </ExpenseAmount>
+                        <span> · 匯率: {expense.rate.toFixed(4)} · </span>
+                        <span>
+                          {/* Use formatDateTime for new data (has dateTime) or formatDateOnly for old data (only has date) */}
+                          {expense.dateTime ? formatDateTime(expense.dateTime) : formatDateOnly(expense.date)}
+                        </span>
                       </div>
                     </div>
                     <Button $danger onClick={() => deleteExpense(expense.id)}>刪除</Button>

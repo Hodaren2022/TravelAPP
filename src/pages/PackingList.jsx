@@ -5,6 +5,11 @@ import { useTrip } from '../contexts/TripContext'
 const Container = styled.div`
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 1rem;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.5rem;
+  }
 `
 
 const TripSelector = styled.div`
@@ -35,6 +40,11 @@ const ItemRow = styled.div`
   
   &:last-child {
     border-bottom: none;
+  }
+  
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 `
 
@@ -79,6 +89,11 @@ const AddItemButton = styled.button`
 const ButtonGroup = styled.div`
   display: flex;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+    width: 100%;
+  }
 `
 
 const Button = styled.button`
@@ -140,6 +155,10 @@ const DefaultItemsGrid = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+  
+  @media (max-width: 480px) {
+    gap: 5px;
+  }
 `;
 
 const PackingList = () => {

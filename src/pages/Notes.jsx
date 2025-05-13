@@ -4,6 +4,11 @@ import styled from 'styled-components';
 const Container = styled.div`
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 1rem;
+  
+  @media (max-width: 768px) {
+    padding: 0 0.5rem;
+  }
 `;
 
 const Card = styled.div`
@@ -33,6 +38,11 @@ const TextArea = styled.textarea`
 const ButtonGroup = styled.div`
   display: flex;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    width: 100%;
+  }
 `;
 
 const Button = styled.button`
@@ -66,6 +76,10 @@ const NoteActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+  
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+  }
 `;
 
 const DeleteButton = styled.button`
@@ -114,6 +128,12 @@ const ButtonDescription = styled.span`
   color: #666;
   display: inline-block;
   vertical-align: middle;
+  
+  @media (max-width: 480px) {
+    margin-left: 0;
+    margin-top: 5px;
+    display: block;
+  }
 `;
 
 const Notes = () => {
