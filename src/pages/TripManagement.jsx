@@ -33,7 +33,7 @@ const FormRow = styled.div`
   display: flex;
   gap: 1rem;
   margin-bottom: 1rem;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.5rem;
@@ -43,7 +43,7 @@ const FormRow = styled.div`
 const FormGroup = styled.div`
   flex: 1;
   margin-bottom: 0.5rem;
-  
+
   input, select, textarea {
     width: 100%;
     padding: 0.5rem;
@@ -58,13 +58,13 @@ const FlightTable = styled.table`
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.5rem;
-  
+
   th, td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
   }
-  
+
   th {
     background-color: #f2f2f2;
   }
@@ -99,7 +99,7 @@ const taiwanAirlines = [
 
 const TripManagement = () => {
   const { trips, setTrips, setSelectedTripId } = useTrip();
-  
+
   const [newTrip, setNewTrip] = useState({
     id: '',
     name: '',
@@ -109,7 +109,7 @@ const TripManagement = () => {
     description: '',
     flights: []
   });
-  
+
   const [newFlight, setNewFlight] = useState({
     date: '',
     airline: '',
@@ -118,16 +118,16 @@ const TripManagement = () => {
     arrivalCity: '',
     departureTime: '',
     arrivalTime: '',
-    departureTimezone: 'UTC+8',  // 預設台灣時區
-    arrivalTimezone: 'UTC+8',     // 預設台灣時區
+    departureTimezone: 'UTC+8 (台灣)',  // 預設台灣時區
+    arrivalTimezone: 'UTC+8 (台灣)',     // 預設台灣時區
     customAirline: '',
     duration: ''
   });
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingFlight, setIsEditingFlight] = useState(false);
   const [editingFlightId, setEditingFlightId] = useState(null);
-  
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -147,11 +147,11 @@ const TripManagement = () => {
       }
     }
   };
-  
+
   const handleFlightInputChange = (e) => {
     const { name, value } = e.target;
     const updatedFlight = { ...newFlight, [name]: value };
-    
+
     // 當起飛時間、降落時間或時區變更時，計算飛行時間
     if (name === 'departureTime' || name === 'arrivalTime' || name === 'departureTimezone' || name === 'arrivalTimezone') {
       if (updatedFlight.departureTime && updatedFlight.arrivalTime) {
@@ -163,10 +163,10 @@ const TripManagement = () => {
         );
       }
     }
-    
+
     setNewFlight(updatedFlight);
   };
-  
+
   // 生成時區選項
   const generateTimezoneOptions = () => {
     const timezones = [];
@@ -193,122 +193,127 @@ const TripManagement = () => {
       '5.5': '(印度、斯里蘭卡)',
       '6': '(孟加拉)',
       '7': '(泰國、越南)',
-      '8': '(台灣、中國)',
-      '9': '(日本、韓國)',
-      '10': '(澳洲雪梨)',
-      '11': '(所羅門群島)',
-      '12': '(紐西蘭)',
-      '13': '(薩摩亞)',
-      '14': '(聖誕島)'
+      '8': '(台灣)', // Add Taiwan annotation
+      '9': '',
+      '10': '',
+      '11': '',
+      '12': '',
+      '13': '',
+      '14': ''
     };
-    
+
     for (let i = -12; i <= 14; i++) {
-      const sign = i >= 0 ? '+' : '';
       // 處理特殊時區（如印度的UTC+5.5）
       if (i === 5) {
         timezones.push(`UTC+5`);
         timezones.push(`UTC+5.5 ${timezoneCountries['5.5']}`);
         continue;
       }
-      
-      const annotation = timezoneCountries[i.toString()] || '';
-      timezones.push(`UTC${sign}${i} ${annotation}`);
+
+      const sign = i >= 0 ? '+' : '';
+      const annotation = timezoneCountries[i.toString()];
+      // Construct the string carefully to avoid trailing space
+      const timezoneString = `UTC${sign}${i}${annotation ? ' ' + annotation : ''}`;
+      timezones.push(timezoneString);
     }
     return timezones;
   };
-  
+
   const timezoneOptions = generateTimezoneOptions();
-  
+
   // 計算飛行時間函數，考慮時區差異
   const calculateFlightDuration = (departureTime, arrivalTime, departureTimezone, arrivalTimezone) => {
     // 解析時區偏移量（格式如 UTC+8 或 UTC-5）
     const parseTimezoneOffset = (timezone) => {
       if (!timezone) return 0;
-      const match = timezone.match(/UTC([+-]\d+)/);
+      const match = timezone.match(/UTC([+-]?\d+(\.\d+)?)/); // Updated regex to handle decimals
       if (match) {
-        return parseInt(match[1], 10);
+        return parseFloat(match[1]); // Use parseFloat for decimal offsets
       }
       return 0;
     };
-    
+
     // 獲取時區偏移量（小時）
     const departureOffset = parseTimezoneOffset(departureTimezone);
     const arrivalOffset = parseTimezoneOffset(arrivalTimezone);
-    
+
     // 創建日期對象用於計算時間差
-    const departureDate = new Date(`2000-01-01T${departureTime}:00`);
-    const arrivalDate = new Date(`2000-01-01T${arrivalTime}:00`);
-    
-    // 處理跨日航班（如果降落時間早於起飛時間，表示跨日）
+    // 使用一個固定的日期，只關注時間和時區
+    const departureDate = new Date(`2000-01-01T${departureTime}:00Z`); // Treat times as UTC initially
+    const arrivalDate = new Date(`2000-01-01T${arrivalTime}:00Z`); // Treat times as UTC initially
+
+    // Apply timezone offsets to get the actual time points in a common reference (like UTC)
+    departureDate.setHours(departureDate.getHours() - departureOffset);
+    arrivalDate.setHours(arrivalDate.getHours() - arrivalOffset);
+
+
+    // 處理跨日航班（如果計算後的降落時間早於起飛時間，表示跨日）
     if (arrivalDate < departureDate) {
-      arrivalDate.setDate(arrivalDate.getDate() + 1);
+       arrivalDate.setDate(arrivalDate.getDate() + 1);
     }
-    
+
     // 計算時間差（毫秒）
     let durationMs = arrivalDate - departureDate;
-    
-    // 考慮時區差異（將時區差異轉換為毫秒）
-    const timezoneOffsetMs = (arrivalOffset - departureOffset) * 60 * 60 * 1000;
-    durationMs -= timezoneOffsetMs;
-    
-    // 確保飛行時間不為負數
-    if (durationMs < 0) {
-      // 如果計算結果為負，可能是跨日問題，再加24小時
-      durationMs += 24 * 60 * 60 * 1000;
-    }
-    
+
+     // 確保飛行時間不為負數，這應該已經被跨日處理涵蓋，但保留以防萬一
+     if (durationMs < 0) {
+         durationMs += 24 * 60 * 60 * 1000; // Add 24 hours in milliseconds
+     }
+
+
     // 轉換為小時和分鐘
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     // 格式化為 小時小時分鐘分 的格式
     return `${hours}小時${minutes}分`;
   };
-  
+
+
   // 排序航班函數 - 按日期和時間排序，日期時間較近的排在上方
   const sortFlights = (flights) => {
     return [...flights].sort((a, b) => {
       // 先比較日期
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
-      
+
       if (dateA.getTime() !== dateB.getTime()) {
         return dateA - dateB; // 日期較早的排前面
       }
-      
+
       // 如果日期相同，比較時間
       const timeA = a.departureTime || '';
       const timeB = b.departureTime || '';
-      
+
       return timeA.localeCompare(timeB);
     });
   };
-  
+
   const handleEditFlight = (flight) => {
     // 將選中的航班信息加載到表單中
     setNewFlight({
       ...flight,
-      // 確保時區信息存在，如果不存在則使用預設值
-      departureTimezone: flight.departureTimezone || 'UTC+8',
-      arrivalTimezone: flight.arrivalTimezone || 'UTC+8',
+      // 確保時區信息存在，如果不存在則使用預設值 'UTC+8 (台灣)'
+      departureTimezone: flight.departureTimezone || 'UTC+8 (台灣)',
+      arrivalTimezone: flight.arrivalTimezone || 'UTC+8 (台灣)',
       // 如果航空公司是自定義的（不在預設列表中），則設置為「其他」
       airline: taiwanAirlines.includes(flight.airline) ? flight.airline : '其他',
       // 如果是自定義航空公司，保存到customAirline字段
       customAirline: taiwanAirlines.includes(flight.airline) ? '' : flight.airline
     });
-    
+
     // 設置編輯狀態和編輯中的航班ID
     setIsEditingFlight(true);
     setEditingFlightId(flight.id);
   };
-  
+
   const addFlight = () => {
     // 處理自定義航空公司
     let airlineName = newFlight.airline;
     if (airlineName === '其他' && newFlight.customAirline) {
       airlineName = newFlight.customAirline;
     }
-    
+
     // 確保飛行時間已計算
     let flightDuration = newFlight.duration;
     if (!flightDuration && newFlight.departureTime && newFlight.arrivalTime) {
@@ -319,7 +324,7 @@ const TripManagement = () => {
         newFlight.arrivalTimezone
       );
     }
-    
+
     if (isEditingFlight) {
       // 更新現有航班
       setNewTrip(prev => {
@@ -334,14 +339,14 @@ const TripManagement = () => {
           }
           return flight;
         });
-        
+
         // 排序更新後的航班
         return {
           ...prev,
           flights: sortFlights(updatedFlights)
         };
       });
-      
+
       // 重置編輯狀態
       setIsEditingFlight(false);
       setEditingFlightId(null);
@@ -353,18 +358,18 @@ const TripManagement = () => {
         duration: flightDuration,
         id: Date.now().toString()
       };
-      
+
       setNewTrip(prev => {
         // 添加新航班並排序
         const updatedFlights = sortFlights([...(prev.flights || []), flight]);
-        
+
         return {
           ...prev,
           flights: updatedFlights
         };
       });
     }
-    
+
     // 重置航班表單
     setNewFlight({
       date: '',
@@ -374,23 +379,23 @@ const TripManagement = () => {
       arrivalCity: '',
       departureTime: '',
       arrivalTime: '',
-      departureTimezone: 'UTC+8',  // 保留預設時區
-      arrivalTimezone: 'UTC+8',     // 保留預設時區
+      departureTimezone: 'UTC+8 (台灣)',  // 保留預設時區
+      arrivalTimezone: 'UTC+8 (台灣)',     // 保留預設時區
       customAirline: '',
       duration: ''
     });
   };
-  
+
   const removeFlight = (flightId) => {
     setNewTrip(prev => ({
       ...prev,
       flights: prev.flights.filter(flight => flight.id !== flightId)
     }));
   };
-  
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Re-validate dates on submit just in case
     const startDate = new Date(newTrip.startDate);
     const endDate = new Date(newTrip.endDate);
@@ -409,7 +414,7 @@ const TripManagement = () => {
       setTrips([...trips, { ...newTrip, id }]);
       setSelectedTripId(id); // 設置新創建的行程為當前選定行程
     }
-    
+
     setNewTrip({
       id: '',
       name: '',
@@ -419,7 +424,7 @@ const TripManagement = () => {
       description: '',
       flights: []
     });
-    
+
     setNewFlight({
       date: '',
       airline: '',
@@ -428,13 +433,13 @@ const TripManagement = () => {
       arrivalCity: '',
       departureTime: '',
       arrivalTime: '',
-      departureTimezone: 'UTC+8',  // 預設台灣時區
-      arrivalTimezone: 'UTC+8',     // 預設台灣時區
+      departureTimezone: 'UTC+8 (台灣)',  // 預設台灣時區
+      arrivalTimezone: 'UTC+8 (台灣)',     // 預設台灣時區
       customAirline: '',
       duration: ''
     });
   };
-  
+
   const handleEdit = (trip) => {
     // 檢查並計算所有航班的飛行時間
     if (trip.flights && trip.flights.length > 0) {
@@ -442,15 +447,16 @@ const TripManagement = () => {
         // 確保每個航班都有時區信息
         const flightWithTimezones = {
           ...flight,
-          departureTimezone: flight.departureTimezone || 'UTC+8',
-          arrivalTimezone: flight.arrivalTimezone || 'UTC+8'
+          // 確保時區信息存在，如果不存在則使用預設值 'UTC+8 (台灣)'
+          departureTimezone: flight.departureTimezone || 'UTC+8 (台灣)',
+          arrivalTimezone: flight.arrivalTimezone || 'UTC+8 (台灣)'
         };
-        
+
         // 如果航班已有飛行時間或缺少起飛/降落時間，則保持不變
         if (flight.duration || !flight.departureTime || !flight.arrivalTime) {
           return flightWithTimezones;
         }
-        
+
         // 計算並添加飛行時間，考慮時區差異
         const duration = calculateFlightDuration(
           flight.departureTime,
@@ -458,13 +464,13 @@ const TripManagement = () => {
           flightWithTimezones.departureTimezone,
           flightWithTimezones.arrivalTimezone
         );
-        
+
         return {
           ...flightWithTimezones,
           duration
         };
       });
-      
+
       setNewTrip({
         ...trip,
         flights: updatedFlights
@@ -472,23 +478,23 @@ const TripManagement = () => {
     } else {
       setNewTrip(trip);
     }
-    
+
     setIsEditing(true);
   };
-  
+
   const handleDelete = (id) => {
     setTrips(trips.filter(trip => trip.id !== id));
   };
-  
+
   return (
     <Container>
       <h2>行程管理</h2>
-      
+
       <TripForm onSubmit={handleSubmit}>
         <h3>
           {isEditing ? '編輯行程（黃色背景表示正在編輯）' : '新增行程'}
         </h3>
-        
+
         <FormGroup $editing={isEditing}>
           <label htmlFor="name">行程名稱</label>
           <input
@@ -500,7 +506,7 @@ const TripManagement = () => {
             required
           />
         </FormGroup>
-        
+
         <FormGroup $editing={isEditing}>
           <label htmlFor="destination">目的地</label>
           <input
@@ -512,7 +518,7 @@ const TripManagement = () => {
             required
           />
         </FormGroup>
-        
+
         <FormGroup $editing={isEditing}>
           <label htmlFor="startDate">開始日期</label>
           <input
@@ -524,7 +530,7 @@ const TripManagement = () => {
             required
           />
         </FormGroup>
-        
+
         <FormGroup $editing={isEditing}>
           <label htmlFor="endDate">結束日期</label>
           <input
@@ -536,7 +542,7 @@ const TripManagement = () => {
             required
           />
         </FormGroup>
-        
+
         <FormGroup $editing={isEditing}>
           <label htmlFor="description">行程描述</label>
           <textarea
@@ -547,15 +553,15 @@ const TripManagement = () => {
             rows="4"
           ></textarea>
         </FormGroup>
-        
+
         <FormSection>
           <h4>
-            {isEditingFlight ? 
-              '編輯航班資訊（黃色背景表示正在編輯）' : 
+            {isEditingFlight ?
+              '編輯航班資訊（黃色背景表示正在編輯）' :
               '航班資訊（選填）'
             }
           </h4>
-          
+
           <FormRow>
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="flightDate">日期</label>
@@ -567,7 +573,7 @@ const TripManagement = () => {
                 onChange={handleFlightInputChange}
               />
             </FormGroup>
-            
+
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="airline">航空公司</label>
               <select
@@ -582,7 +588,7 @@ const TripManagement = () => {
                 ))}
               </select>
             </FormGroup>
-            
+
             {newFlight.airline === '其他' && (
               <FormGroup $editing={isEditingFlight}>
                 <label htmlFor="customAirline">自定義航空公司</label>
@@ -596,7 +602,7 @@ const TripManagement = () => {
               </FormGroup>
             )}
           </FormRow>
-          
+
           <FormRow>
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="flightNumber">航班編號</label>
@@ -610,31 +616,7 @@ const TripManagement = () => {
               />
             </FormGroup>
           </FormRow>
-          
-          <FormRow>
-            <FormGroup $editing={isEditingFlight}>
-              <label htmlFor="departureCity">起飛城市</label>
-              <input
-                type="text"
-                id="departureCity"
-                name="departureCity"
-                value={newFlight.departureCity}
-                onChange={handleFlightInputChange}
-              />
-            </FormGroup>
-            
-            <FormGroup $editing={isEditingFlight}>
-              <label htmlFor="arrivalCity">降落城市</label>
-              <input
-                type="text"
-                id="arrivalCity"
-                name="arrivalCity"
-                value={newFlight.arrivalCity}
-                onChange={handleFlightInputChange}
-              />
-            </FormGroup>
-          </FormRow>
-          
+
           <FormRow>
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="departureTime">起飛時間</label>
@@ -646,7 +628,7 @@ const TripManagement = () => {
                 onChange={handleFlightInputChange}
               />
             </FormGroup>
-            
+
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="departureTimezone">起飛時區</label>
               <select
@@ -661,7 +643,7 @@ const TripManagement = () => {
               </select>
             </FormGroup>
           </FormRow>
-          
+
           <FormRow>
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="arrivalTime">降落時間</label>
@@ -673,7 +655,7 @@ const TripManagement = () => {
                 onChange={handleFlightInputChange}
               />
             </FormGroup>
-            
+
             <FormGroup $editing={isEditingFlight}>
               <label htmlFor="arrivalTimezone">降落時區</label>
               <select
@@ -688,19 +670,19 @@ const TripManagement = () => {
               </select>
             </FormGroup>
           </FormRow>
-          
+
           <ButtonGroup style={{ marginTop: '0.5rem' }}>
-            <Button 
-              type="button" 
-              $primary 
+            <Button
+              type="button"
+              $primary
               onClick={addFlight}
             >
               {isEditingFlight ? '更新航班' : '新增航班'}
             </Button>
-            
+
             {isEditingFlight && (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={() => {
                   // 取消編輯，重置表單
                   setIsEditingFlight(false);
@@ -713,8 +695,8 @@ const TripManagement = () => {
                     arrivalCity: '',
                     departureTime: '',
                     arrivalTime: '',
-                    departureTimezone: 'UTC+8',
-                    arrivalTimezone: 'UTC+8',
+                    departureTimezone: 'UTC+8 (台灣)',
+                    arrivalTimezone: 'UTC+8 (台灣)',
                     customAirline: '',
                     duration: ''
                   });
@@ -724,7 +706,7 @@ const TripManagement = () => {
               </Button>
             )}
           </ButtonGroup>
-          
+
           {newTrip.flights && newTrip.flights.length > 0 && (
             <div style={{ marginTop: '1rem' }}>
               <h5>已新增航班</h5>
@@ -743,8 +725,8 @@ const TripManagement = () => {
                 </thead>
                 <tbody>
                   {sortFlights(newTrip.flights).map(flight => (
-                    <tr 
-                      key={flight.id} 
+                    <tr
+                      key={flight.id}
                       style={{
                         backgroundColor: flight.id === editingFlightId ? '#fff8e6' : 'transparent',
                       }}
@@ -753,8 +735,8 @@ const TripManagement = () => {
                       <td>{flight.airline}</td>
                       <td>{flight.flightNumber}</td>
                       <td>{flight.departureCity}/{flight.arrivalCity}</td>
-                      <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8'})</td>
-                      <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8'})</td>
+                      <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8 (台灣)'})</td>
+                      <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8 (台灣)'})</td>
                       <td>{flight.duration || '-'}</td>
                       <td>
                         <ButtonGroup>
@@ -777,7 +759,7 @@ const TripManagement = () => {
             </div>
           )}
         </FormSection>
-        
+
         <ButtonGroup>
           <Button $primary type="submit">
             {isEditing ? '更新行程' : '新增行程'}
@@ -803,8 +785,8 @@ const TripManagement = () => {
                 arrivalCity: '',
                 departureTime: '',
                 arrivalTime: '',
-                departureTimezone: 'UTC+8',
-                arrivalTimezone: 'UTC+8',
+                departureTimezone: 'UTC+8 (台灣)',
+                arrivalTimezone: 'UTC+8 (台灣)',
                 customAirline: '',
                 duration: ''
               });
@@ -814,7 +796,7 @@ const TripManagement = () => {
           )}
         </ButtonGroup>
       </TripForm>
-      
+
       <div>
         <h3>我的行程</h3>
         {trips.length === 0 ? (
@@ -826,7 +808,7 @@ const TripManagement = () => {
               <p><strong>目的地:</strong> {trip.destination}</p>
               <p><strong>日期:</strong> {trip.startDate} 至 {trip.endDate}</p>
               <p>{trip.description}</p>
-              
+
               {trip.flights && trip.flights.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
                   <h5>航班資訊</h5>
@@ -849,8 +831,8 @@ const TripManagement = () => {
                           <td>{flight.airline}</td>
                           <td>{flight.flightNumber}</td>
                           <td>{flight.departureCity}/{flight.arrivalCity}</td>
-                          <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8'})</td>
-                          <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8'})</td>
+                          <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8 (台灣)'})</td>
+                          <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8 (台灣)'})</td>
                           <td>{flight.duration || '-'}</td>
                         </tr>
                       ))}
@@ -858,7 +840,7 @@ const TripManagement = () => {
                   </FlightTable>
                 </div>
               )}
-              
+
               <ButtonGroup>
                 <Button $primary onClick={() => handleEdit(trip)}>編輯</Button>
                 <Button onClick={() => handleDelete(trip.id)}>刪除</Button>
