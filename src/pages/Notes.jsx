@@ -226,6 +226,7 @@ const Notes = () => {
   
   // 刪除記事
   const handleDeleteNote = (noteId) => {
+    if (!window.confirm('確定要刪除這則記事嗎？此動作無法復原。')) return;
     setNotes(notes.filter(note => note.id !== noteId));
     
     if (editingNote && editingNote.id === noteId) {

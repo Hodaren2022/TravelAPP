@@ -321,7 +321,7 @@ const TravelNotes = () => {
 
   const handleDelete = (noteId) => {
     if (!selectedTripId) return;
-    if (!window.confirm('確定要刪除這則旅遊筆記嗎？此動作無法復原。')) return; // 刪除前確認
+    if (!window.confirm('確定要刪除這則旅遊筆記嗎？此動作無法復原。')) return;
     const updatedNotes = (notes[selectedTripId] || []).filter(note => note.id !== noteId);
     setNotes({ ...notes, [selectedTripId]: updatedNotes });
   };

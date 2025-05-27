@@ -444,14 +444,17 @@ const ExpenseTracker = () => {
     // Removed the alert message here as requested. (Confirmed it was not present in the provided code)
   };
 
-  // 刪除消費記錄
+  // 刪除消費記錄（新增確認提示）
   const deleteExpense = (expenseId) => {
     if (!selectedTripId) return;
-
-    setExpenses(prev => ({
-      ...prev,
-      [selectedTripId]: prev[selectedTripId].filter(exp => exp.id !== expenseId)
-    }));
+    if (!window.confirm('確定要刪除此筆消費記錄嗎？')) return;
+    setExpenses(prev => {
+      const updated = { ...prev };
+      if (updated[selectedTripId]) {
+        updated[selectedTripId] = updated[selectedTripId].filter(exp => exp.id !== expenseId);
+      }
+      return updated;
+    });
   };
 
   // 獲取選定行程的消費記錄
