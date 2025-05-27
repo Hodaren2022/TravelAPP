@@ -208,6 +208,7 @@ const ExpenseTracker = () => {
       };
 
       setExchangeRates(rates);
+      localStorage.setItem('lastExchangeRates', JSON.stringify(rates)); // 新增這行
       setLastUpdated(new Date());
       setIsLoading(false);
     } catch (error) {
@@ -221,12 +222,15 @@ const ExpenseTracker = () => {
         KRW: 42.5    // 1台幣約等於42.5韓元
       };
       
-      setExchangeRates(fallbackRates);
+      const lastRates = localStorage.getItem('lastExchangeRates');
+      if (lastRates) {
+        setExchangeRates(JSON.parse(lastRates));
+      } else {
+        setExchangeRates(fallbackRates);
+      }
       setLastUpdated(new Date());
       setIsLoading(false);
-      
-      // 提示用戶使用的是離線數據
-      alert('無法獲取即時匯率，目前使用離線匯率數據。請檢查網路連線後重新整理匯率。');
+      alert('無法獲取即時匯率，目前使用上次的匯率數據或預設值。請檢查網路連線後重新整理匯率。');
     }
   };
 
