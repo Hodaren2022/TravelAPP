@@ -190,24 +190,43 @@ const ExpenseTracker = () => {
     try {
       setIsLoading(true);
 
-      // 實際應用中應使用真實的匯率API
-      // 例如: const response = await fetch('https://api.exchangerate-api.com/v4/latest/TWD');
-      // const data = await response.json();
+      // 使用真實的匯率API - ExchangeRate-API (免費版本)
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/TWD');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // 提取我們需要的匯率
+      const rates = {
+        JPY: data.rates.JPY || 4.32,   // 台幣對日幣
+        USD: data.rates.USD || 0.032,  // 台幣對美元
+        CNY: data.rates.CNY || 0.23,   // 台幣對人民幣
+        KRW: data.rates.KRW || 42.5    // 台幣對韓元
+      };
 
-      // 這裡使用模擬數據
-      const mockRates = {
+      setExchangeRates(rates);
+      setLastUpdated(new Date());
+      setIsLoading(false);
+    } catch (error) {
+      console.error('獲取匯率失敗:', error);
+      
+      // 如果API失敗，使用備用的模擬數據
+      const fallbackRates = {
         JPY: 4.32,   // 1台幣約等於4.32日幣
         USD: 0.032,  // 1台幣約等於0.032美元
         CNY: 0.23,   // 1台幣約等於0.23人民幣
         KRW: 42.5    // 1台幣約等於42.5韓元
       };
-
-      setExchangeRates(mockRates);
+      
+      setExchangeRates(fallbackRates);
       setLastUpdated(new Date());
       setIsLoading(false);
-    } catch (error) {
-      console.error('獲取匯率失敗:', error);
-      setIsLoading(false);
+      
+      // 提示用戶使用的是離線數據
+      alert('無法獲取即時匯率，目前使用離線匯率數據。請檢查網路連線後重新整理匯率。');
     }
   };
 
