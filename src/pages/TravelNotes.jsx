@@ -325,7 +325,7 @@ const TravelNotes = () => {
   };
 
   const selectedTripNotes = selectedTripId ? (notes[selectedTripId] || []) : [];
-  const sortedNotes = [...selectedTripNotes].sort((a, b) => new Date(b.date + 'T' + (a.title.split(' ')[1] || '00:00')) - new Date(a.date + 'T' + (b.title.split(' ')[1] || '00:00')) ).reverse();
+  const sortedNotes = [...selectedTripNotes].sort((a, b) => new Date(b.date + 'T' + (b.title.split(' ')[1] || '00:00')) - new Date(a.date + 'T' + (a.title.split(' ')[1] || '00:00')) );
 
 
   // Disable submit button if essential data is loading for a NEW note.
@@ -456,7 +456,7 @@ const TravelNotes = () => {
                   </ButtonGroup>
                 </NoteCard>
               ))
-            )}
+            }
           </div>
         </>
       ) : (
