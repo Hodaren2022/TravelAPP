@@ -143,6 +143,7 @@ const TravelNotes = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [gpsStatus, setGpsStatus] = useState('');
   const [weatherStatus, setWeatherStatus] = useState('');
+  const [sortNewestFirst, setSortNewestFirst] = useState(true); // 新增排序狀態
 
   // Debug: Log newNote whenever it changes
   useEffect(() => {
@@ -320,12 +321,18 @@ const TravelNotes = () => {
 
   const handleDelete = (noteId) => {
     if (!selectedTripId) return;
+    if (!window.confirm('確定要刪除這則旅遊筆記嗎？此動作無法復原。')) return; // 刪除前確認
     const updatedNotes = (notes[selectedTripId] || []).filter(note => note.id !== noteId);
     setNotes({ ...notes, [selectedTripId]: updatedNotes });
   };
 
   const selectedTripNotes = selectedTripId ? (notes[selectedTripId] || []) : [];
-  const sortedNotes = [...selectedTripNotes].sort((a, b) => new Date(b.date + 'T' + (b.title.split(' ')[1] || '00:00')) - new Date(a.date + 'T' + (a.title.split(' ')[1] || '00:00')) );
+  // 根據排序狀態決定排序方式
+  const sortedNotes = [...selectedTripNotes].sort((a, b) => {
+    const aDate = new Date(a.date + 'T' + (a.title.split(' ')[1] || '00:00'));
+    const bDate = new Date(b.date + 'T' + (b.title.split(' ')[1] || '00:00'));
+    return sortNewestFirst ? bDate - aDate : aDate - bDate;
+  });
 
 
   // Disable submit button if essential data is loading for a NEW note.
@@ -335,7 +342,6 @@ const TravelNotes = () => {
   return (
     <Container>
       <h2>旅遊筆記</h2>
-
       <TripSelector>
         <label htmlFor="trip">選擇行程:</label>
         <select id="trip" value={selectedTripId || ''} onChange={handleTripChange}>
@@ -347,7 +353,6 @@ const TravelNotes = () => {
           ))}
         </select>
       </TripSelector>
-
       {selectedTripId ? (
         <>
           <NoteForm onSubmit={handleSubmit}>
@@ -383,11 +388,9 @@ const TravelNotes = () => {
               <label htmlFor="content">內容</label>
               <textarea id="content" name="content" value={newNote.content} onChange={handleInputChange} rows="8" required ref={contentRef}></textarea>
             </div>
-
             <QuickTextContainer>
               <div>
                 <label>筆記模板：</label>
-                {/* MODIFICATION HERE: Added align-items: flex-start to the style */}
                 <QuickTextSection style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-start' }}>
                   {noteTemplates.map(template => (
                     <QuickTextButton key={template} onClick={() => handleQuickTextClick(template + '\n')} style={{ textAlign: 'left', margin: '2px 0' }}>
@@ -409,7 +412,6 @@ const TravelNotes = () => {
                 </QuickTextSection>
               </div>
             </QuickTextContainer>
-
             <ButtonGroup>
               <Button $primary type="submit" disabled={isFetchingInitialData}>
                 {isEditing ? '更新筆記' : '新增筆記'}
@@ -424,9 +426,21 @@ const TravelNotes = () => {
               )}
             </ButtonGroup>
           </NoteForm>
-
           <div>
-            <h3>我的旅遊筆記</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>我的旅遊筆記</h3>
+              <Button
+                type="button"
+                $primary={false}
+                style={{ backgroundColor: '#7f8c8d', color: 'white', fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}
+                onClick={() => setSortNewestFirst(s => !s)}
+              >
+                {sortNewestFirst ? '最新在前' : '最舊在前'}
+                <span style={{ marginLeft: 6 }}>
+                  {sortNewestFirst ? '↓' : '↑'}
+                </span>
+              </Button>
+            </div>
             {sortedNotes.length === 0 ? (
               <p>尚未添加任何旅遊筆記</p>
             ) : (
@@ -443,7 +457,7 @@ const TravelNotes = () => {
                       <strong>地點:</strong> {note.location}
                     </p>
                   )}
-                  {(note.weather || note.temperature) && ( // Display if either weather or temp exists
+                  {(note.weather || note.temperature) && (
                     <p style={{ color: '#555', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                       <strong>天氣:</strong> {note.weather || '未記錄'}
                       {note.temperature && ` (${note.temperature || '未記錄'})`}
@@ -456,7 +470,7 @@ const TravelNotes = () => {
                   </ButtonGroup>
                 </NoteCard>
               ))
-            }
+            )}
           </div>
         </>
       ) : (
