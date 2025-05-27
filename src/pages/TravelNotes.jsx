@@ -435,9 +435,9 @@ const TravelNotes = () => {
                 style={{ backgroundColor: '#7f8c8d', color: 'white', fontSize: '0.9rem', padding: '0.3rem 0.8rem' }}
                 onClick={() => setSortNewestFirst(s => !s)}
               >
-                {sortNewestFirst ? '最新在前' : '最舊在前'}
+                {sortNewestFirst ? '最舊在前' : '最新在前'}
                 <span style={{ marginLeft: 6 }}>
-                  {sortNewestFirst ? '↓' : '↑'}
+                  {sortNewestFirst ? '↑' : '↓'}
                 </span>
               </Button>
             </div>
