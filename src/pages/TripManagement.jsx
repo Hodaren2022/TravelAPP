@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import styled from 'styled-components'
 import { useTrip } from '../contexts/TripContext'
 
@@ -85,6 +85,35 @@ const Button = styled.button`
   cursor: pointer;
 `
 
+const Toast = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 16px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  animation: fadeIn 0.3s, fadeOut 0.3s 0.7s;
+  opacity: 0;
+  transition: opacity 0.3s;
+  
+  &.show {
+    opacity: 1;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+`
+
 // 台灣航空公司列表
 const taiwanAirlines = [
   '中華航空',
@@ -99,6 +128,13 @@ const taiwanAirlines = [
 
 const TripManagement = () => {
   const { trips, setTrips, setSelectedTripId } = useTrip();
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' 為新到舊，'asc' 為舊到新
+  
+  // 浮動視窗狀態
+  const [toast, setToast] = useState({
+    show: false,
+    message: ''
+  });
 
   const [newTrip, setNewTrip] = useState({
     id: '',
@@ -288,6 +324,24 @@ const TripManagement = () => {
       return timeA.localeCompare(timeB);
     });
   };
+  
+  // 排序行程函數 - 根據開始日期排序
+  const sortTrips = (tripsToSort) => {
+    return [...tripsToSort].sort((a, b) => {
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+      
+      // 根據排序順序決定排序方向
+      return sortOrder === 'desc' 
+        ? dateB - dateA // 新到舊（降序）
+        : dateA - dateB; // 舊到新（升序）
+    });
+  };
+  
+  // 切換排序順序
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+  };
 
   const handleEditFlight = (flight) => {
     // 將選中的航班信息加載到表單中
@@ -350,6 +404,7 @@ const TripManagement = () => {
       // 重置編輯狀態
       setIsEditingFlight(false);
       setEditingFlightId(null);
+      showToast('已更新航班'); // 顯示更新航班提示
     } else {
       // 添加新航班
       const flight = {
@@ -368,6 +423,8 @@ const TripManagement = () => {
           flights: updatedFlights
         };
       });
+      
+      showToast('已新增航班'); // 顯示新增航班提示
     }
 
     // 重置航班表單
@@ -391,7 +448,29 @@ const TripManagement = () => {
       ...prev,
       flights: prev.flights.filter(flight => flight.id !== flightId)
     }));
+    showToast('已刪除航班'); // 顯示刪除航班提示
   };
+
+  // 顯示浮動視窗的函數
+  const showToast = (message) => {
+    setToast({
+      show: true,
+      message
+    });
+    
+    // 1秒後自動隱藏
+    setTimeout(() => {
+      setToast({
+        show: false,
+        message: ''
+      });
+    }, 1000);
+  };
+  
+  // 監聽toast狀態變化，處理動畫
+  useEffect(() => {
+    // 這裡不需要額外處理，因為我們使用CSS動畫和transition
+  }, [toast.show]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -409,10 +488,12 @@ const TripManagement = () => {
       setTrips(trips.map(trip => trip.id === newTrip.id ? newTrip : trip));
       setIsEditing(false);
       setSelectedTripId(newTrip.id); // 設置編輯後的行程為當前選定行程
+      showToast('已更新'); // 顯示更新提示
     } else {
       const id = Date.now().toString();
       setTrips([...trips, { ...newTrip, id }]);
       setSelectedTripId(id); // 設置新創建的行程為當前選定行程
+      showToast('已新增'); // 顯示新增提示
     }
 
     setNewTrip({
@@ -480,6 +561,7 @@ const TripManagement = () => {
     }
 
     setIsEditing(true);
+    showToast('已編輯'); // 顯示編輯提示
   };
 
   const handleDelete = (id) => {
@@ -489,14 +571,83 @@ const TripManagement = () => {
     // 只有當用戶點擊確認後，才執行刪除操作
     if (isConfirmed) {
       setTrips(trips.filter(trip => trip.id !== id));
+      showToast('已刪除'); // 顯示刪除提示
     }
     // 如果用戶點擊取消，則不執行任何操作
   };
 
   return (
     <Container>
+      {/* 浮動視窗 */}
+      {toast.show && (
+        <Toast className={toast.show ? 'show' : ''}>
+          {toast.message}
+        </Toast>
+      )}
       <h2>行程管理</h2>
+      
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3>我的行程</h3>
+          <Button 
+            $primary 
+            onClick={toggleSortOrder} 
+            style={{ padding: '0.3rem 0.8rem' }}
+          >
+            {sortOrder === 'desc' ? '目前：新到舊 ↓' : '目前：舊到新 ↑'}
+          </Button>
+        </div>
+        {trips.length === 0 ? (
+          <p>尚未建立任何行程</p>
+        ) : (
+          sortTrips(trips).map(trip => (
+            <TripCard key={trip.id}>
+              <h4>{trip.name}</h4>
+              <p><strong>目的地:</strong> {trip.destination}</p>
+              <p><strong>日期:</strong> {trip.startDate} 至 {trip.endDate}</p>
+              <p>{trip.description}</p>
 
+              {trip.flights && trip.flights.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h5>航班資訊</h5>
+                  <FlightTable>
+                    <thead>
+                      <tr>
+                        <th>日期</th>
+                        <th>航空公司</th>
+                        <th>航班編號</th>
+                        <th>起飛/降落城市</th>
+                        <th>起飛時間(24小時制)/時區</th>
+                        <th>降落時間(24小時制)/時區</th>
+                        <th>飛行時間</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortFlights(trip.flights).map(flight => (
+                        <tr key={flight.id}>
+                          <td>{flight.date}</td>
+                          <td>{flight.airline}</td>
+                          <td>{flight.flightNumber}</td>
+                          <td>{flight.departureCity}/{flight.arrivalCity}</td>
+                          <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8 (台灣)'})</td>
+                          <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8 (台灣)'})</td>
+                          <td>{flight.duration || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </FlightTable>
+                </div>
+              )}
+
+              <ButtonGroup>
+                <Button $primary onClick={() => handleEdit(trip)}>編輯</Button>
+                <Button onClick={() => handleDelete(trip.id)}>刪除</Button>
+              </ButtonGroup>
+            </TripCard>
+          ))
+        )}
+      </div>
+      
       <TripForm onSubmit={handleSubmit}>
         <h3>
           {isEditing ? '編輯行程（黃色背景表示正在編輯）' : '新增行程'}
@@ -803,59 +954,6 @@ const TripManagement = () => {
           )}
         </ButtonGroup>
       </TripForm>
-
-      <div>
-        <h3>我的行程</h3>
-        {trips.length === 0 ? (
-          <p>尚未建立任何行程</p>
-        ) : (
-          trips.map(trip => (
-            <TripCard key={trip.id}>
-              <h4>{trip.name}</h4>
-              <p><strong>目的地:</strong> {trip.destination}</p>
-              <p><strong>日期:</strong> {trip.startDate} 至 {trip.endDate}</p>
-              <p>{trip.description}</p>
-
-              {trip.flights && trip.flights.length > 0 && (
-                <div style={{ marginTop: '1rem' }}>
-                  <h5>航班資訊</h5>
-                  <FlightTable>
-                    <thead>
-                      <tr>
-                        <th>日期</th>
-                        <th>航空公司</th>
-                        <th>航班編號</th>
-                        <th>起飛/降落城市</th>
-                        <th>起飛時間(24小時制)/時區</th>
-                        <th>降落時間(24小時制)/時區</th>
-                        <th>飛行時間</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortFlights(trip.flights).map(flight => (
-                        <tr key={flight.id}>
-                          <td>{flight.date}</td>
-                          <td>{flight.airline}</td>
-                          <td>{flight.flightNumber}</td>
-                          <td>{flight.departureCity}/{flight.arrivalCity}</td>
-                          <td>{flight.departureTime} ({flight.departureTimezone || 'UTC+8 (台灣)'})</td>
-                          <td>{flight.arrivalTime} ({flight.arrivalTimezone || 'UTC+8 (台灣)'})</td>
-                          <td>{flight.duration || '-'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </FlightTable>
-                </div>
-              )}
-
-              <ButtonGroup>
-                <Button $primary onClick={() => handleEdit(trip)}>編輯</Button>
-                <Button onClick={() => handleDelete(trip.id)}>刪除</Button>
-              </ButtonGroup>
-            </TripCard>
-          ))
-        )}
-      </div>
     </Container>
   );
 };
